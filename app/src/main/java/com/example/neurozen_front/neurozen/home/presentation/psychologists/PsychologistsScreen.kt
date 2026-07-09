@@ -38,7 +38,6 @@ import java.util.*
 fun PsychologistsScreen(
     viewModel: PsychologistsViewModel = hiltViewModel()
 ) {
-    var showDatePicker by remember { mutableStateOf(false) }
     var selectedPsychologist by remember { mutableStateOf<ProfessionalResource?>(null) }
     var showVideoCall by remember { mutableStateOf<AppointmentEntity?>(null) }
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -64,29 +63,109 @@ fun PsychologistsScreen(
             onHangUp = { showVideoCall = null }
         )
     } else {
-        if (showDatePicker) {
+        var showBookingDialog by remember { mutableStateOf(false) }
+
+        if (showBookingDialog) {
+            var appointmentType by remember { mutableIntStateOf(1) } // Default: Consulta Inicial
+            var additionalNotes by remember { mutableStateOf("") }
+            
             val datePickerState = rememberDatePickerState()
-            DatePickerDialog(
-                onDismissRequest = { showDatePicker = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            selectedPsychologist?.let { psycho ->
-                                viewModel.scheduleAppointment(psycho, millis)
+            val timePickerState = rememberTimePickerState(is24Hour = false)
+            var currentStep by remember { mutableIntStateOf(0) } // 0: Details, 1: Date, 2: Time
+
+            when (currentStep) {
+                0 -> {
+                    AlertDialog(
+                        onDismissRequest = { showBookingDialog = false },
+                        title = { Text("Detalles de la Cita", fontWeight = FontWeight.Bold) },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Text("Selecciona el tipo de cita:", style = MaterialTheme.typography.bodyMedium)
+                                
+                                val types = listOf("Consulta Inicial", "Terapia Individual", "Sesión de Seguimiento")
+                                types.forEachIndexed { index, label ->
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth().clickable { appointmentType = index + 1 }
+                                    ) {
+                                        RadioButton(selected = appointmentType == index + 1, onClick = { appointmentType = index + 1 })
+                                        Text(label)
+                                    }
+                                }
+                                
+                                OutlinedTextField(
+                                    value = additionalNotes,
+                                    onValueChange = { additionalNotes = it },
+                                    label = { Text("Notas adicionales (opcional)") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    minLines = 3
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            Button(onClick = { currentStep = 1 }) {
+                                Text("Siguiente")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showBookingDialog = false }) {
+                                Text("Cancelar")
                             }
                         }
-                        showDatePicker = false
-                    }) {
-                        Text("Confirmar")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDatePicker = false }) {
-                        Text("Cancelar")
+                    )
+                }
+                1 -> {
+                    DatePickerDialog(
+                        onDismissRequest = { showBookingDialog = false },
+                        confirmButton = {
+                            TextButton(onClick = { currentStep = 2 }) {
+                                Text("Siguiente: Hora")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { currentStep = 0 }) {
+                                Text("Atrás")
+                            }
+                        }
+                    ) {
+                        DatePicker(state = datePickerState)
                     }
                 }
-            ) {
-                DatePicker(state = datePickerState)
+                2 -> {
+                    AlertDialog(
+                        onDismissRequest = { showBookingDialog = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                val dateMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                                val calendar = Calendar.getInstance().apply {
+                                    timeInMillis = dateMillis
+                                    set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                                    set(Calendar.MINUTE, timePickerState.minute)
+                                }
+                                selectedPsychologist?.let { psycho ->
+                                    viewModel.scheduleAppointment(
+                                        professional = psycho,
+                                        dateMillis = calendar.timeInMillis,
+                                        type = appointmentType,
+                                        notes = additionalNotes
+                                    )
+                                }
+                                showBookingDialog = false
+                            }) {
+                                Text("Confirmar Cita")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { currentStep = 1 }) {
+                                Text("Atrás")
+                            }
+                        },
+                        title = { Text("Selecciona la hora") },
+                        text = {
+                            TimePicker(state = timePickerState)
+                        }
+                    )
+                }
             }
         }
 
@@ -183,7 +262,7 @@ fun PsychologistsScreen(
                                     professional = professional,
                                     onBookClick = {
                                         selectedPsychologist = professional
-                                        showDatePicker = true
+                                        showBookingDialog = true
                                     }
                                 )
                             }
@@ -226,7 +305,8 @@ fun PsychologistsScreen(
                                 items(appointments) { appointment ->
                                     AppointmentCard(
                                         appointment = appointment,
-                                        onStartCall = { showVideoCall = it }
+                                        onStartCall = { showVideoCall = it },
+                                        onDelete = { viewModel.deleteAppointment(it) }
                                     )
                                 }
                             }
@@ -241,9 +321,12 @@ fun PsychologistsScreen(
 @Composable
 fun AppointmentCard(
     appointment: AppointmentEntity,
-    onStartCall: (AppointmentEntity) -> Unit
+    onStartCall: (AppointmentEntity) -> Unit,
+    onDelete: (AppointmentEntity) -> Unit
 ) {
-    val dateStr = SimpleDateFormat("EEEE, dd 'de' MMMM", Locale("es", "PE")).format(Date(appointment.dateMillis))
+    val date = Date(appointment.dateMillis)
+    val dateStr = SimpleDateFormat("EEEE, dd 'de' MMMM", Locale("es", "PE")).format(date)
+    val timeStr = SimpleDateFormat("hh:mm a", Locale("es", "PE")).format(date)
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -270,8 +353,24 @@ fun AppointmentCard(
                     Text(appointment.psychologistName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(appointment.psychologistSpecialty, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
-                IconButton(onClick = { /* Opciones */ }) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                var showMenu by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Cancelar Cita", color = Color.Red) },
+                            onClick = {
+                                onDelete(appointment)
+                                showMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red) }
+                        )
+                    }
                 }
             }
             
@@ -280,7 +379,7 @@ fun AppointmentCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(dateStr.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${dateStr.replaceFirstChar { it.uppercase() }} • $timeStr", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             
             Spacer(modifier = Modifier.height(20.dp))

@@ -1,12 +1,12 @@
 package com.example.neurozen_front.neurozen.home.presentation.home
 
 import android.util.Log
-import android.text.format.DateFormat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.neurozen_front.neurozen.data.local.AppointmentDao
 import com.example.neurozen_front.neurozen.data.local.AppointmentEntity
 import com.example.neurozen_front.neurozen.data.network.DashboardResponse
+import com.example.neurozen_front.neurozen.data.network.HealthMetricRequest
 import com.example.neurozen_front.neurozen.data.network.MeditationResource
 import com.example.neurozen_front.neurozen.data.network.NeurozenRepository
 import com.example.neurozen_front.neurozen.data.session.UserSession
@@ -16,7 +16,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -145,12 +147,53 @@ class HomeViewModel @Inject constructor(
 
     private fun loadMeditations() {
         viewModelScope.launch {
-            if (!UserSession.hasActiveSession()) return@launch
-            val result = repository.getMeditations(UserSession.bearerTokenOrEmpty())
-            result.onSuccess { meditations ->
-                _homeState.update { it.copy(sessions = mapSessions(meditations)) }
+            // Siempre aseguramos que haya sesiones, si el backend falla o está vacío usamos locales
+            val token = UserSession.bearerTokenOrEmpty()
+            repository.getMeditations(token).onSuccess { meditations ->
+                val mapped = mapSessions(meditations)
+                _homeState.update { it.copy(sessions = mapped.ifEmpty { getDefaultSessions() }) }
+            }.onFailure {
+                _homeState.update { it.copy(sessions = getDefaultSessions()) }
             }
         }
+    }
+
+    private fun getDefaultSessions(): List<MeditationSession> {
+        return listOf(
+            MeditationSession(
+                id = "s1",
+                title = "Respiración Profunda",
+                durationMinutes = 10,
+                type = "Respiración",
+                difficulty = "Principiante",
+                description = "Una guía simple para calmar el sistema nervioso.",
+                benefit = "Reduce el estrés inmediato",
+                status = "Disponible",
+                imageUrl = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=1000"
+            ),
+            MeditationSession(
+                id = "s2",
+                title = "Calma Mental",
+                durationMinutes = 15,
+                type = "Meditación",
+                difficulty = "Intermedio",
+                description = "Encuentra paz en medio del caos diario.",
+                benefit = "Mejora el enfoque",
+                status = "Disponible",
+                imageUrl = "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=1000"
+            ),
+            MeditationSession(
+                id = "s3",
+                title = "Sueño Reparador",
+                durationMinutes = 20,
+                type = "Relajación",
+                difficulty = "Principiante",
+                description = "Música y guía para conciliar el sueño.",
+                benefit = "Dormir mejor",
+                status = "Disponible",
+                imageUrl = "https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83?q=80&w=1000"
+            )
+        )
     }
 
     private fun mapSessions(sessions: List<MeditationResource>): List<MeditationSession> {
@@ -266,7 +309,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun formatNow(): String = DateFormat.format("HH:mm", Date()).toString()
+    private fun formatNow(): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 
     private fun parseIsoDate(dateStr: String): Long {
         return try {

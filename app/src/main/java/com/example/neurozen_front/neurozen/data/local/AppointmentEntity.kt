@@ -10,6 +10,8 @@ data class AppointmentEntity(
     val psychologistName: String,
     val psychologistSpecialty: String = "",
     val dateMillis: Long,
+    val appointmentType: Int = 1,
+    val notes: String = "",
     val status: String = "Scheduled",
     val createdAt: Long = System.currentTimeMillis()
 )

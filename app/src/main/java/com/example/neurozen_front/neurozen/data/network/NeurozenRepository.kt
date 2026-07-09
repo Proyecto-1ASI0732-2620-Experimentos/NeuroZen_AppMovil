@@ -10,12 +10,18 @@ class NeurozenRepository @javax.inject.Inject constructor(
         return try {
             val response = call()
             if (response.isSuccessful) {
-                Result.success(response.body() ?: throw IllegalStateException("Cuerpo vacío"))
+                val body = response.body()
+                if (body != null) {
+                    Result.success(body)
+                } else {
+                    Result.failure(Exception("Respuesta vacía del servidor"))
+                }
             } else {
                 val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
-                Result.failure(IllegalStateException("Error ${response.code()}: $errorMsg"))
+                Result.failure(Exception("Error ${response.code()}: $errorMsg"))
             }
         } catch (e: Exception) {
+            // Log the exception if needed
             Result.failure(e)
         }
     }
@@ -24,10 +30,15 @@ class NeurozenRepository @javax.inject.Inject constructor(
         return try {
             val response = apiService.signIn(SignInRequest(username = username, password = password))
             if (response.isSuccessful) {
-                val body = response.body()!!
-                Result.success(AuthSession(token = body.token, userId = body.id, username = body.username, email = ""))
+                val body = response.body()
+                if (body != null) {
+                    Result.success(AuthSession(token = body.token, userId = body.id, username = body.username, email = body.email ?: ""))
+                } else {
+                    Result.failure(Exception("Cuerpo de login vacío"))
+                }
             } else {
-                Result.failure(IllegalStateException("Login fallido"))
+                val errorMsg = response.errorBody()?.string() ?: "Error de credenciales"
+                Result.failure(Exception("Login fallido: $errorMsg"))
             }
         } catch (e: Exception) {
             Result.failure(e)

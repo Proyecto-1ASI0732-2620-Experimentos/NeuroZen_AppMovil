@@ -52,18 +52,18 @@ data class ProfessionalResource(
 
 // --- Appointments Models ---
 data class AppointmentRequest(
-    @SerializedName("PatientId") val patientId: String, // UUID del usuario
+    @SerializedName("PatientId") val patientId: String,
     @SerializedName("ProfessionalId") val professionalId: Int,
-    @SerializedName("AppointmentDateTime") val appointmentDateTime: String,
+    @SerializedName("AppointmentDate") val appointmentDate: String, // Cambiado de AppointmentDateTime a AppointmentDate
     @SerializedName("AppointmentType") val appointmentType: Int,
     @SerializedName("NotasAdicionales") val notasAdicionales: String? = null
 )
 
 data class AppointmentResponse(
     @SerializedName(value = "Id", alternate = ["id"]) val id: Int,
-    @SerializedName(value = "PatientId", alternate = ["patientId"]) val patientId: String, // UUID
+    @SerializedName(value = "PatientId", alternate = ["patientId"]) val patientId: String,
     @SerializedName(value = "ProfessionalId", alternate = ["professionalId"]) val professionalId: Int,
-    @SerializedName(value = "AppointmentDateTime", alternate = ["appointmentDateTime"]) val appointmentDateTime: String,
+    @SerializedName(value = "AppointmentDate", alternate = ["appointmentDate", "appointmentDateTime", "AppointmentDateTime"]) val appointmentDate: String,
     @SerializedName(value = "Status", alternate = ["status"]) val status: String,
     @SerializedName(value = "ProfessionalName", alternate = ["professionalName"]) val professionalName: String? = null
 )
