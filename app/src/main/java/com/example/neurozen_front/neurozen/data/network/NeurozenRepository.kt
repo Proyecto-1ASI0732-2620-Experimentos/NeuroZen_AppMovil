@@ -21,7 +21,6 @@ class NeurozenRepository @javax.inject.Inject constructor(
                 Result.failure(Exception("Error ${response.code()}: $errorMsg"))
             }
         } catch (e: Exception) {
-            // Log the exception if needed
             Result.failure(e)
         }
     }
@@ -32,7 +31,22 @@ class NeurozenRepository @javax.inject.Inject constructor(
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null) {
-                    Result.success(AuthSession(token = body.token, userId = body.id, username = body.username, email = body.email ?: ""))
+                    val parsedRole = if (body.role?.contains("PSYCHOLOGIST", ignoreCase = true) == true ||
+                        body.role?.contains("PROFESSIONAL", ignoreCase = true) == true) {
+                        UserRole.PSYCHOLOGIST
+                    } else {
+                        UserRole.CLIENT
+                    }
+
+                    Result.success(
+                        AuthSession(
+                            token = body.token,
+                            userId = body.id,
+                            username = body.username,
+                            email = body.email ?: "",
+                            role = parsedRole
+                        )
+                    )
                 } else {
                     Result.failure(Exception("Cuerpo de login vacío"))
                 }
@@ -45,8 +59,11 @@ class NeurozenRepository @javax.inject.Inject constructor(
         }
     }
 
-    suspend fun register(username: String, email: String, password: String): Result<SignUpResponse> =
-        safeApiCall { apiService.signUp(SignUpRequest(username, password, email)) }
+    suspend fun register(username: String, email: String, password: String, role: String = "CLIENT"): Result<SignUpResponse> =
+        safeApiCall { apiService.signUp(SignUpRequest(username, password, email, role)) }
+
+    suspend fun createProfessional(request: CreateProfessionalRequest, token: String): Result<ProfessionalResource> =
+        safeApiCall { apiService.createProfessional(request, token) }
 
     suspend fun fetchDashboard(userId: String, bearerToken: String): Result<DashboardResponse> =
         safeApiCall { apiService.getDashboard(userId, bearerToken) }
@@ -57,19 +74,33 @@ class NeurozenRepository @javax.inject.Inject constructor(
     suspend fun getProfessionals(token: String): Result<List<ProfessionalResource>> =
         safeApiCall { apiService.getProfessionals(token) }
 
+    suspend fun getProfessionalById(id: Int, token: String): Result<ProfessionalResource> =
+        safeApiCall { apiService.getProfessionalById(id, token) }
+
     suspend fun createAppointment(appointment: AppointmentRequest, token: String): Result<AppointmentResponse> =
         safeApiCall { apiService.createAppointment(appointment, token) }
-
-    suspend fun createSubscription(request: SubscriptionRequest, token: String): Result<SubscriptionResource> =
-        safeApiCall { apiService.createSubscription(request, token) }
 
     suspend fun getPatientAppointments(patientId: String, token: String): Result<List<AppointmentResponse>> =
         safeApiCall { apiService.getPatientAppointments(patientId, token) }
 
-    suspend fun createHealthMetric(request: HealthMetricRequest, token: String): Result<HealthMetricResource> =
-        safeApiCall { apiService.createHealthMetric(request, token) }
+    suspend fun getAppointmentTypes(token: String): Result<List<AppointmentTypeResource>> =
+        safeApiCall { apiService.getAppointmentTypes(token) }
+
+    suspend fun createTrigger(request: TriggerRequest, token: String): Result<TriggerResource> =
+        safeApiCall { apiService.createTrigger(request, token) }
+
+    suspend fun getResourceLibraries(token: String): Result<List<ResourceLibraryItem>> =
+        safeApiCall { apiService.getResourceLibraries(token) }
+
+    suspend fun createResourceLibrary(item: ResourceLibraryItem, token: String): Result<ResourceLibraryItem> =
+        safeApiCall { apiService.createResourceLibrary(item, token) }
+
+    suspend fun createSubscription(request: SubscriptionRequest, token: String): Result<SubscriptionResource> =
+        safeApiCall { apiService.createSubscription(request, token) }
+
+    suspend fun getUserSubscription(userId: String, token: String): Result<SubscriptionResource> =
+        safeApiCall { apiService.getUserSubscription(userId, token) }
 
     suspend fun getHealthHistory(userId: String, token: String): Result<List<HealthMetricResource>> =
         safeApiCall { apiService.getUserHealthMetrics(userId, token) }
 }
-

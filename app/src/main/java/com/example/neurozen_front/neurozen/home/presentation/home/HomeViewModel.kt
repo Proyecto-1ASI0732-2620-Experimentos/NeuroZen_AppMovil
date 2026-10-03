@@ -104,7 +104,6 @@ class HomeViewModel @Inject constructor(
                             email = session.email ?: current.user.email
                         )
                         
-                        // Si hay una cita próxima en el dashboard, la guardamos/actualizamos localmente
                         dashboard.nextAppointment?.let { remote ->
                             viewModelScope.launch {
                                 appointmentDao.insertAppointment(
@@ -135,8 +134,14 @@ class HomeViewModel @Inject constructor(
                         )
                     }
                 }.onFailure { error ->
-                    Log.e("HomeViewModel", "Dashboard failed: ${error.message}")
-                    _homeState.update { it.copy(isLoading = false, connectedToApi = false) }
+                    // MODO SILENCIOSO: Si falla el backend, no mostramos error al usuario
+                    // simplemente mantenemos los datos locales cargados en init
+                    _homeState.update { it.copy(
+                        isLoading = false, 
+                        connectedToApi = false,
+                        error = null,
+                        lastSync = "Modo local activo"
+                    ) }
                 }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Dashboard exception", e)
@@ -284,18 +289,19 @@ class HomeViewModel @Inject constructor(
             val userId = UserSession.state.value.userId ?: return@launch
             val token = UserSession.bearerTokenOrEmpty()
 
-            val request = com.example.neurozen_front.neurozen.data.network.HealthMetricRequest(
+            val desc = "Estrés: $stress/10, Sueño: ${sleep}h, Ritmo: ${heartRate}bpm. $notes".trim()
+
+            // Enviar trigger de estrés al endpoint POST /triggers del backend
+            val triggerReq = com.example.neurozen_front.neurozen.data.network.TriggerRequest(
                 userId = userId,
                 stressLevel = stress,
-                sleepHours = sleep,
-                heartRate = heartRate,
-                notes = notes
+                triggerSource = "Check-in Diario",
+                description = desc
             )
+            repository.createTrigger(triggerReq, token)
 
-            repository.createHealthMetric(request, token).onSuccess {
-                refresh()
-                loadHealthHistory()
-            }
+            refresh()
+            loadHealthHistory()
         }
     }
 

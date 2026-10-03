@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.neurozen_front.neurozen.data.network.UserRole
 
 @Composable
 fun Login(
@@ -45,7 +46,6 @@ fun Login(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Cabecera de Login
             Surface(
                 modifier = Modifier.size(80.dp),
                 shape = RoundedCornerShape(24.dp),
@@ -53,11 +53,11 @@ fun Login(
                 shadowElevation = 8.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("🔐", fontSize = 32.sp)
+                    Text(if (state.role == UserRole.PSYCHOLOGIST) "🩺" else "🔐", fontSize = 32.sp)
                 }
             }
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             Text(
                 text = if (state.isRegisterMode) "Crea tu cuenta" else "Bienvenido de vuelta",
@@ -66,12 +66,32 @@ fun Login(
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = if (state.isRegisterMode) "Únete a la comunidad de paz mental" else "Tu paz te espera. Ingresa tus datos.",
+                text = if (state.isRegisterMode) "Únete a la plataforma de NeuroZen" else "Ingresa tus datos de acceso.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Selector de Rol (Paciente vs Psicólogo)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                SegmentedButton(
+                    selected = state.role == UserRole.CLIENT,
+                    onClick = { loginViewModel.onRoleSelect(UserRole.CLIENT) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                ) {
+                    Text("Paciente")
+                }
+                SegmentedButton(
+                    selected = state.role == UserRole.PSYCHOLOGIST,
+                    onClick = { loginViewModel.onRoleSelect(UserRole.PSYCHOLOGIST) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                ) {
+                    Text("Psicólogo")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Formulario en Tarjeta
             Card(
@@ -110,6 +130,41 @@ fun Login(
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                             )
                         )
+
+                        if (state.role == UserRole.PSYCHOLOGIST) {
+                            OutlinedTextField(
+                                value = state.specialization,
+                                onValueChange = { loginViewModel.onSpecializationChange(it) },
+                                label = { Text("Especialidad (ej: Terapia Cognitivo Conductual)") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = state.phone,
+                                onValueChange = { loginViewModel.onPhoneChange(it) },
+                                label = { Text("Teléfono de contacto") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = state.price,
+                                onValueChange = { loginViewModel.onPriceChange(it) },
+                                label = { Text("Precio por consulta (S/)") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = state.bio,
+                                onValueChange = { loginViewModel.onBioChange(it) },
+                                label = { Text("Breve biografía profesional") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                minLines = 2
+                            )
+                        }
                     }
                     
                     OutlinedTextField(
@@ -173,7 +228,11 @@ fun Login(
                             )
                         } else {
                             Text(
-                                text = if (state.isRegisterMode) "Registrarse" else "Iniciar Sesión",
+                                text = if (state.isRegisterMode) {
+                                    if (state.role == UserRole.PSYCHOLOGIST) "Registrarme como Psicólogo" else "Registrarse"
+                                } else {
+                                    if (state.role == UserRole.PSYCHOLOGIST) "Iniciar Sesión (Psicólogo)" else "Iniciar Sesión"
+                                },
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -193,17 +252,13 @@ fun Login(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             TextButton(onClick = onDemoAccess) {
-                Text(
-                    "¿Solo quieres probar? Entrar como demo",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium
-                )
+                Text("Entrar como Invitado Demo", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
             }
             
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             Text(
                 text = "Seguro • Privado • Neurozen",
