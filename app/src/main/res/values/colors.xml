@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="forest_900">#FF123524</color>
-    <color name="forest_700">#FF2A6B4B</color>
-    <color name="emerald_600">#FF4E9F6E</color>
-    <color name="sage_500">#FF7DBA93</color>
-    <color name="mint_300">#FFADE8C8</color>
-    <color name="mint_100">#FFF0FAF3</color>
-    <color name="sand_100">#FFF7F5EE</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="nz_forest700">#FF2A6B4B</color>
+    <color name="nz_mint100">#FFF0FAF3</color>
+    <color name="nz_cream">#FFFDF1E1</color>
 </resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.NeuroZen" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/nz_mint100</item>
+    </style>
+</resources>
