@@ -1,21 +1,30 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ---------------------------------------------------------------------------
+# NeuroZen - R8 rules for the release build (isMinifyEnabled = true)
+# ---------------------------------------------------------------------------
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Gson reads/writes these classes by reflection: keep class and field names.
+#  - data.remote: Retrofit DTOs (Dtos.kt) and ErrorResponseDto parsed in ApiCall.kt
+#  - domain.model: Session, serialized to DataStore by SessionRepositoryImpl
+-keep class com.example.neurozen_front.data.remote.** { *; }
+-keep class com.example.neurozen_front.domain.model.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Generic signatures and annotations (needed by Gson and Retrofit).
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes *Annotation*, RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+-keepattributes AnnotationDefault
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Gson
+-keepclassmembers,allowobfuscation class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
+
+# Retrofit with suspend functions (R8 full mode)
+-keep,allowobfuscation,allowshrinking interface retrofit2.Call
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+
+# Readable crash stack traces
+-keepattributes SourceFile, LineNumberTable
+-renamesourcefileattribute SourceFile
