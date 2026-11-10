@@ -149,13 +149,15 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+        
       - name: Distribute to testers
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
           FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
-          APK: ${{ needs.build-release.outputs.apk_name }}
           SHA256: ${{ needs.build-release.outputs.sha256 }}
         run: |
+          APK=$(ls neurozen-sha-*.apk | head -n 1)
+          echo "APK encontrado: $APK"
           npx --yes firebase-tools appdistribution:distribute "$APK" \
             --app "$FIREBASE_APP_ID" \
             --groups "qa" \
