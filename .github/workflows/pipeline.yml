@@ -44,7 +44,8 @@ jobs:
             app/build/test-results/
             app/build/reports/
       - name: SonarQube Cloud Quality Gate
-        uses: SonarSource/sonarqube-scan-action@v5
+        if: github.ref == 'refs/heads/main'
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
