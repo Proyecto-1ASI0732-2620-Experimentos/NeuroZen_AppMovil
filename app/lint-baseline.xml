@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 9.1.1" type="baseline" client="gradle" dependencies="false" name="AGP (9.1.1)" variant="all" version="9.1.1">
+
+    <issue
+        id="OldTargetApi"
+        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details."
+        errorLine1="        targetSdk = 36"
+        errorLine2="        ~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="25"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `enableOnBackInvokedCallback` is only used in API level 33 and higher (current min is 26)"
+        errorLine1="        android:enableOnBackInvokedCallback=&quot;true&quot;"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="14"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="AndroidGradlePluginVersion"
+        message="A newer version of Gradle than 9.3.1 is available: 9.9.0"
+        errorLine1="distributionUrl=https\://services.gradle.org/distributions/gradle-9.3.1-bin.zip"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/wrapper/gradle-wrapper.properties"
+            line="5"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="AndroidGradlePluginVersion"
+        message="A newer version of com.android.application than 9.1.1 is available: 9.5.1"
+        errorLine1="agp = &quot;9.1.1&quot;"
+        errorLine2="      ~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="2"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.core:core-ktx than 1.18.0 is available: 1.19.1"
+        errorLine1="coreKtx = &quot;1.18.0&quot;"
+        errorLine2="          ~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="5"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.10.0 is available: 2.11.0"
+        errorLine1="lifecycle = &quot;2.10.0&quot;"
+        errorLine2="            ~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="6"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.lifecycle:lifecycle-viewmodel-compose than 2.10.0 is available: 2.11.0"
+        errorLine1="lifecycle = &quot;2.10.0&quot;"
+        errorLine2="            ~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="6"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose:compose-bom than 2026.05.00 is available: 2026.09.00"
+        errorLine1="composeBom = &quot;2026.05.00&quot;"
+        errorLine2="             ~~~~~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="8"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.navigation:navigation-compose than 2.9.8 is available: 2.10.2"
+        errorLine1="navigationCompose = &quot;2.9.8&quot;"
+        errorLine2="                    ~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="9"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.hilt:hilt-navigation-compose than 1.2.0 is available: 1.4.0"
+        errorLine1="hiltNavigationCompose = &quot;1.2.0&quot;"
+        errorLine2="                        ~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="11"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-compiler than 2.8.4 is available: 2.8.5"
+        errorLine1="room = &quot;2.8.4&quot;"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="14"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-ktx than 2.8.4 is available: 2.8.5"
+        errorLine1="room = &quot;2.8.4&quot;"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="14"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-runtime than 2.8.4 is available: 2.8.5"
+        errorLine1="room = &quot;2.8.4&quot;"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="14"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.datastore:datastore-preferences than 1.1.1 is available: 1.3.0"
+        errorLine1="datastore = &quot;1.1.1&quot;"
+        errorLine2="            ~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="15"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.test:core-ktx than 1.6.1 is available: 1.7.0"
+        errorLine1="androidxTestCore = &quot;1.6.1&quot;"
+        errorLine2="                   ~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="21"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlin.plugin.compose than 2.3.21 is available: 2.4.21"
+        errorLine1="kotlin = &quot;2.3.21&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="3"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.dagger.hilt.android than 2.59.2 is available: 2.60.1"
+        errorLine1="hilt = &quot;2.59.2&quot;"
+        errorLine2="       ~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="10"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.dagger:hilt-android than 2.59.2 is available: 2.60.1"
+        errorLine1="hilt = &quot;2.59.2&quot;"
+        errorLine2="       ~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="10"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.dagger:hilt-android-compiler than 2.59.2 is available: 2.60.1"
+        errorLine1="hilt = &quot;2.59.2&quot;"
+        errorLine2="       ~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="10"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.squareup.okhttp3:logging-interceptor than 4.12.0 is available: 5.5.1"
+        errorLine1="okhttp = &quot;4.12.0&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="13"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.squareup.okhttp3:mockwebserver than 4.12.0 is available: 5.5.1"
+        errorLine1="okhttp = &quot;4.12.0&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="13"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of io.coil-kt.coil3:coil-compose than 3.4.0 is available: 3.6.3"
+        errorLine1="coil = &quot;3.4.0&quot;"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="16"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of io.coil-kt.coil3:coil-network-okhttp than 3.4.0 is available: 3.6.3"
+        errorLine1="coil = &quot;3.4.0&quot;"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="16"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of io.mockk:mockk than 1.13.13 is available: 1.14.12"
+        errorLine1="mockk = &quot;1.13.13&quot;"
+        errorLine2="        ~~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="18"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-test than 1.10.2 is available: 1.11.0"
+        errorLine1="coroutinesTest = &quot;1.10.2&quot;"
+        errorLine2="                 ~~~~~~~~">
+        <location
+            file="$HOME/Downloads/NeuroZen_AppMovil-develop (2)/NeuroZen_AppMovil-develop/gradle/libs.versions.toml"
+            line="19"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ContextCastToActivity"
+        message="LocalContext should not be cast to Activity, use LocalActivity instead"
+        errorLine1="    val activity = LocalContext.current as? Activity"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/neurozen_front/presentation/worker/AppointmentsScreen.kt"
+            line="202"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="ContextCastToActivity"
+        message="LocalContext should not be cast to Activity, use LocalActivity instead"
+        errorLine1="    val activity = LocalContext.current as? Activity"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/neurozen_front/presentation/psychologist/PsychologistScreens.kt"
+            line="362"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="ViewModelConstructorInComposable"
+        message="Constructing a view model in a composable"
+        errorLine1="        compose.setContent { NeuroZenTheme { ZenBotScreen(onBack = {}, onSuggestion = {}, vm = ZenBotViewModel()) } }"
+        errorLine2="                                                                                               ~~~~~~~~~~~~~~~">
+        <location
+            file="src/androidTest/java/com/example/neurozen_front/ComposeUiTest.kt"
+            line="60"
+            column="96"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is never &lt; 26"
+        errorLine1="        if (Build.VERSION.SDK_INT &lt; Build.VERSION_CODES.O) return"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/neurozen_front/notifications/NotificationHelper.kt"
+            line="20"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
+        <location
+            file="src/main/res/mipmap-anydpi-v26"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.nz_forest700` appears to be unused"
+        errorLine1="    &lt;color name=&quot;nz_forest700&quot;>#FF2A6B4B&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="3"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.nz_cream` appears to be unused"
+        errorLine1="    &lt;color name=&quot;nz_cream&quot;>#FFFDF1E1&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="5"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.visibility` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/visibility.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.visibility_off` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/visibility_off.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/logo_neurozen.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/logo_neurozen.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher.webp, ic_launcher_round.webp">
+        <location
+            file="src/main/res/mipmap-hdpi/ic_launcher_round.webp"/>
+        <location
+            file="src/main/res/mipmap-hdpi/ic_launcher.webp"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher.webp, ic_launcher_round.webp">
+        <location
+            file="src/main/res/mipmap-mdpi/ic_launcher_round.webp"/>
+        <location
+            file="src/main/res/mipmap-mdpi/ic_launcher.webp"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher.webp, ic_launcher_round.webp">
+        <location
+            file="src/main/res/mipmap-xhdpi/ic_launcher_round.webp"/>
+        <location
+            file="src/main/res/mipmap-xhdpi/ic_launcher.webp"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher.webp, ic_launcher_round.webp">
+        <location
+            file="src/main/res/mipmap-xxhdpi/ic_launcher_round.webp"/>
+        <location
+            file="src/main/res/mipmap-xxhdpi/ic_launcher.webp"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher.webp, ic_launcher_round.webp">
+        <location
+            file="src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp"/>
+        <location
+            file="src/main/res/mipmap-xxxhdpi/ic_launcher.webp"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/neurozen_front/notifications/ReminderSettingsStore.kt"
+            line="40"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putStringSet(&quot;appointment_ids&quot;, ids.map { it.toString() }.toSet()).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/neurozen_front/notifications/ReminderSettingsStore.kt"
+            line="52"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="    fun clear() = prefs.edit().clear().apply()"
+        errorLine2="                  ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/neurozen_front/notifications/ReminderSettingsStore.kt"
+            line="55"
+            column="19"/>
+    </issue>
+
+</issues>

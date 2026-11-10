@@ -100,7 +100,7 @@ Decisiones clave:
 | Integración Room (instrumentada) | `src/androidTest/RoomIntegrationTest` | Base real en memoria y borrado al cerrar sesión |
 | UI (Compose Test) | `src/androidTest/ComposeUiTest` | Login (entrada, envío, error) y ZenBot (mensaje de crisis con líneas de ayuda) |
 
-CI: `.github/workflows/ci.yml` ejecuta `testDebugUnitTest` y `assembleDebug` en cada push/PR y publica el reporte; las pruebas instrumentadas corren en emulador con *Run workflow* manual.
+CI/CD: `.github/workflows/pipeline.yml` tiene cuatro jobs. `quality` (pruebas unitarias, JaCoCo, Android Lint y Quality Gate de SonarQube Cloud) corre en cada push/PR a `develop` y `main`. `smoke` (pruebas instrumentadas en emulador) corre en PRs y pushes a `main`. `build-release` (APK/AAB firmados) y `distribute` (Firebase App Distribution, grupo `qa`) corren solo en push a `main`. `.github/workflows/cd-production-mobile.yml` publica un APK firmado en GitHub Releases al subir un tag `vX.Y.Z`. Detalle en `docs/cambios-cicd.md`.
 
 ## Alcance y limitaciones
 

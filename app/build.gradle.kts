@@ -23,18 +23,48 @@ android {
         applicationId = "com.example.neurozen_front"
         minSdk = 26 // java.time without desugaring; covers ~97% of active devices
         targetSdk = 36
-        versionCode = 4
-        versionName = "2.2.0"
+        // CI: each GitHub Actions run gets a higher versionCode (never below 4, the last manual release).
+        val ciRun = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
+        versionCode = 4 + ciRun
+        versionName = "2.2.$ciRun"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         manifestPlaceholders["resetLinkHost"] = resetLinkHost
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    // Release signing only when the CI (or you, locally) exports the keystore variables.
+    // Without them, assembleRelease still builds (unsigned) instead of failing.
+    val keystorePath: String? = System.getenv("KEYSTORE_PATH")
+    signingConfigs {
+        create("release") {
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
         }
+    }
+
+    buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (keystorePath != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+    lint {
+        baseline = file("lint-baseline.xml")
+        xmlReport = true
+        htmlReport = true
+        abortOnError = true
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

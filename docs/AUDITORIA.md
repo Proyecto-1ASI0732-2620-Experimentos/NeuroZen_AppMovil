@@ -91,4 +91,4 @@ Contraste del código recibido (`NeuroZen_AppMovil-main.zip`) con los requisitos
 | Internacionalización | Parcial: español en el código; extraer a `strings.xml` es el siguiente paso |
 | HTTPS, sin logs sensibles | Cumple (logging BASIC solo en debug) |
 | Pruebas unitarias, integración, UI, instrumentadas | Cumple |
-| CI GitHub Actions | Cumple (`.github/workflows/ci.yml`) |
+| CI GitHub Actions | Cumple (`.github/workflows/pipeline.yml`) |
