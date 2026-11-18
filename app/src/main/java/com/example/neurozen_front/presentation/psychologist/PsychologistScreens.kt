@@ -1,5 +1,10 @@
 package com.example.neurozen_front.presentation.psychologist
 
+import androidx.compose.ui.platform.testTag
+import com.example.neurozen_front.domain.logic.AvailabilityDraft
+import com.example.neurozen_front.domain.model.isProfessionalNotVerified
+import androidx.compose.material.icons.outlined.Edit
+import com.example.neurozen_front.presentation.components.SpecialtyField
 import androidx.compose.foundation.background
 import androidx.compose.material3.Surface
 import androidx.compose.ui.draw.clip
@@ -163,7 +168,8 @@ class ProAgendaViewModel @Inject constructor(
                     })
                     load()
                 }
-                is Outcome.Failure -> messages.send(r.error.message)
+                // 403 «cuenta no verificada»: PsychologistRoot already returns to the verification screen (no generic error)
+                is Outcome.Failure -> if (!r.error.isProfessionalNotVerified()) messages.send(r.error.message)
             }
         }
     }
@@ -409,10 +415,7 @@ fun ScheduleScreen(profile: ProfessionalProfile, root: PsychologistViewModel, vm
 
     var weekStartEpoch by rememberSaveable { mutableLongStateOf(DateTimeUtils.todayInLima().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toEpochDay()) }
     val weekStart = LocalDate.ofEpochDay(weekStartEpoch)
-    val style = DayCodec.detectStyle(profile.schedule?.days.orEmpty())
-    var days by rememberSaveable(profile.schedule) { mutableStateOf(profile.schedule?.days.orEmpty().mapNotNull(DayCodec::parse).map { it.name }.toSet()) }
-    var start by rememberSaveable(profile.schedule) { mutableStateOf(profile.schedule?.start?.ifBlank { null } ?: "09:00") }
-    var end by rememberSaveable(profile.schedule) { mutableStateOf(profile.schedule?.end?.ifBlank { null } ?: "18:00") }
+    var availability by remember(profile.schedule) { mutableStateOf(AvailabilityDraft.from(profile.schedule)) }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
       Column(Modifier.padding(padding)) {
@@ -444,22 +447,10 @@ fun ScheduleScreen(profile: ProfessionalProfile, root: PsychologistViewModel, vm
                 SectionCard {
                     Text("Disponibilidad semanal", style = MaterialTheme.typography.titleMedium)
                     Text("Los pacientes verán bloques de 1 hora dentro de este horario (hora de Lima).", style = MaterialTheme.typography.bodySmall)
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        items(DayOfWeek.entries.toList()) { d ->
-                            FilterChip(selected = d.name in days, onClick = { days = if (d.name in days) days - d.name else days + d.name }, label = { Text(DateTimeUtils.dayShort(d)) })
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        NzTextField(start, { start = it }, "Desde", Modifier.weight(1f), error = if (Validators.isValidHour(start)) null else "HH:mm")
-                        NzTextField(end, { end = it }, "Hasta", Modifier.weight(1f), error = if (Validators.isValidHour(end)) null else "HH:mm")
-                    }
-                    val valid = days.isNotEmpty() && Validators.isValidHour(start) && Validators.isValidHour(end) && end > start
-                    if (!valid) Text("Elige días y un horario válido (fin posterior al inicio).", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    AvailabilityEditor(availability, { availability = it })
                     PrimaryButton("Guardar disponibilidad", onClick = {
-                        val selected = days.map { DayOfWeek.valueOf(it) }.toSet()
-                        val schedule = AvailabilitySchedule(selected.sorted().map { DayCodec.encode(it, style) }, start, end)
-                        root.save({ it.copy(schedule = schedule, availability = DayCodec.summary(selected, start, end)) }, "Disponibilidad actualizada")
-                    }, loading = saving, enabled = valid)
+                        root.save({ it.copy(schedule = availability.toSchedule(), availability = availability.summary()) }, "Disponibilidad actualizada")
+                    }, loading = saving, enabled = availability.isValid)
                 }
             }
         }
@@ -556,6 +547,13 @@ fun ProProfileScreen(
     var price by rememberSaveable(profile.price) { mutableStateOf(profile.price?.let { "%.2f".format(java.util.Locale.US, it) }.orEmpty()) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmLogout by remember { mutableStateOf(false) }
+    // Name correction: the backend sends the profile back to PENDING, so the user is warned before saving.
+    var editingName by rememberSaveable { mutableStateOf(false) }
+    var newName by rememberSaveable(profile.name) { mutableStateOf(profile.name) }
+    var confirmNameChange by remember { mutableStateOf(false) }
+    // The backend requires the schedule in every save: without a saved one, it is asked here in the same form
+    val needsSchedule = !AvailabilityDraft.hasSchedule(profile.schedule)
+    var availability by remember(profile.schedule) { mutableStateOf(AvailabilityDraft.from(profile.schedule)) }
     val steps = profile.completedSteps
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
@@ -572,7 +570,7 @@ fun ProProfileScreen(
                                     Text(profile.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.weight(1f, fill = false))
                                     Icon(Icons.Filled.Verified, contentDescription = "Verificado", tint = Color.White, modifier = Modifier.padding(start = 6.dp).size(20.dp))
                                 }
-                                Text(profile.specialty, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.9f))
+                                Text(Catalogs.specialtyLabel(profile.specialty), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.9f))
                                 Text("CPsP ${profile.licenseNumber} · ${profile.email}", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.75f))
                             }
                         }
@@ -600,17 +598,33 @@ fun ProProfileScreen(
                         letterSpacing = 1.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
                     )
                     SectionCard {
-                        NzTextField(specialty, { specialty = it }, "Especialidad")
+                        SpecialtyField(specialty, { specialty = it },
+                            error = if (Catalogs.SPECIALTIES.any { it.key == specialty }) null else "Selecciona una especialidad válida")
                         NzTextField(bio, { bio = it.take(1000) }, "Biografía", singleLine = false, minLines = 4, supporting = "${bio.length}/1000 · Cuéntales tu enfoque y con qué temas trabajas")
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            NzTextField(years, { years = it.filter(Char::isDigit).take(2) }, "Años de experiencia", Modifier.weight(1f), keyboardType = KeyboardType.Number)
+                            NzTextField(years, { years = Validators.digitsOnly(it, 2) }, "Años de experiencia", Modifier.weight(1f), keyboardType = KeyboardType.Number)
                             NzTextField(price, { price = it.replace(',', '.') }, "Tarifa (S/)", Modifier.weight(1f), keyboardType = KeyboardType.Decimal)
                         }
+                        if (needsSchedule) {
+                            Column(
+                                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(NzColors.Moderate.copy(alpha = 0.08f)).padding(14.dp).testTag("profile_availability"),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text("Disponibilidad semanal", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                Text("Para guardar tu perfil indica tus días y horario de atención. Puedes cambiarlos cuando quieras en Agenda.",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                AvailabilityEditor(availability, { availability = it })
+                            }
+                        }
                         val priceValue = price.toDoubleOrNull()
-                        val valid = specialty.isNotBlank() && (price.isBlank() || (priceValue != null && priceValue >= 0))
+                        val valid = Catalogs.SPECIALTIES.any { it.key == specialty } && (price.isBlank() || (priceValue != null && priceValue >= 0)) &&
+                            (!needsSchedule || availability.isValid)
                         PrimaryButton("Guardar cambios", onClick = {
-                            root.save({ it.copy(specialty = specialty, bio = bio, experienceYears = years.toIntOrNull(), price = priceValue) }, "Perfil actualizado")
-                        }, loading = saving, enabled = valid)
+                            root.save({ base ->
+                                val updated = base.copy(specialty = specialty, bio = bio, experienceYears = years.toIntOrNull(), price = priceValue)
+                                if (needsSchedule) updated.copy(schedule = availability.toSchedule(), availability = availability.summary()) else updated
+                            }, "Perfil actualizado")
+                        }, loading = saving, enabled = valid, modifier = Modifier.testTag("profile_save"))
                     }
                 }
             }
@@ -620,7 +634,21 @@ fun ProProfileScreen(
                     GroupDivider()
                     ListRow(Icons.Outlined.VerifiedUser, "Colegiatura CPsP", "N.° ${profile.licenseNumber} · ${profile.status.label}", tint = Accent.Emerald, showChevron = false)
                     GroupDivider()
-                    ListRow(Icons.Outlined.Info, "¿Necesitas cambiarlos?", "Modificar nombre o colegiatura requiere una nueva verificación del administrador.", tint = Accent.Blue, showChevron = false)
+                    ListRow(Icons.Outlined.Info, "¿Necesitas cambiarlos?", "Si cambias tu nombre, tu cuenta volverá a revisión del administrador.", tint = Accent.Blue, showChevron = false)
+                    GroupDivider()
+                    ListRow(Icons.Outlined.Edit, if (editingName) "No cambiar el nombre" else "Corregir nombre", tint = Accent.Blue) {
+                        editingName = !editingName
+                        newName = profile.name
+                    }
+                }
+            }
+            if (editingName) item {
+                SectionCard(Modifier.padding(horizontal = 20.dp)) {
+                    val nameError = Validators.fullNameError(newName)
+                    val changed = Validators.normalizeFullName(newName) != Validators.normalizeFullName(profile.name)
+                    NzTextField(newName, { newName = it.take(Validators.FULL_NAME_MAX_LENGTH) }, "Nombre completo (como figura en el CPsP)",
+                        error = if (changed) nameError else null, supporting = "Si cambias tu nombre, tu cuenta volverá a revisión del administrador.")
+                    PrimaryButton("Guardar nombre", onClick = { confirmNameChange = true }, loading = saving, enabled = changed && nameError == null)
                 }
             }
             item {
@@ -650,6 +678,17 @@ fun ProProfileScreen(
             }
         }
     }
+    if (confirmNameChange) ConfirmDialog(
+        "¿Cambiar tu nombre?",
+        "Si cambias tu nombre, tu cuenta volverá a revisión del administrador. Mientras tanto no podrás ver ni atender citas.",
+        "Cambiar y enviar a revisión",
+        {
+            confirmNameChange = false
+            editingName = false
+            root.save({ it.copy(fullName = Validators.normalizeFullName(newName)) }, "Nombre actualizado")
+        },
+        { confirmNameChange = false }
+    )
     if (confirmLogout) ConfirmDialog("Cerrar sesión", "Se borrarán los datos guardados en este teléfono.", "Cerrar sesión", onLogout, { confirmLogout = false })
     if (confirmDelete) ConfirmDialog("Eliminar cuenta", "Se eliminarán tu cuenta y tus datos personales de forma permanente (Ley 29733).", "Eliminar", account::deleteAccount, { confirmDelete = false }, destructive = true)
 }

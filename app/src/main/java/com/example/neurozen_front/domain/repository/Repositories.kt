@@ -39,6 +39,10 @@ interface SessionRepository {
     suspend fun shouldShowVerifiedWelcome(userId: Long): Boolean
     suspend fun markVerifiedWelcomeShown(userId: Long)
     fun requireUserId(): Long
+
+    /** Emits when any call answers 403 «Tu cuenta profesional aún no está verificada». */
+    val professionalNotVerifiedEvents: kotlinx.coroutines.flow.Flow<Unit>
+        get() = kotlinx.coroutines.flow.emptyFlow()
 }
 
 interface AuthRepository {

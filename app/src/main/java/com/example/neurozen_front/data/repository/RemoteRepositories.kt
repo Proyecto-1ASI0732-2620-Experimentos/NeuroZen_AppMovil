@@ -26,6 +26,7 @@ import com.example.neurozen_front.data.remote.toDto
 import com.example.neurozen_front.data.remote.toSession
 import com.example.neurozen_front.domain.logic.CardValidator
 import com.example.neurozen_front.domain.logic.DateTimeUtils
+import com.example.neurozen_front.domain.logic.Validators
 import com.example.neurozen_front.domain.model.AppError
 import com.example.neurozen_front.domain.model.Appointment
 import com.example.neurozen_front.domain.model.AppointmentStatus
@@ -77,11 +78,15 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun signUp(data: RegisterData): Outcome<Session> {
-        val parts = data.fullName.trim().split(Regex("\\s+"), limit = 2)
         val body = SignUpDto(
-            username = data.email.trim(), email = data.email.trim(), password = data.password,
-            fullName = data.fullName.trim(), firstName = parts.firstOrNull(), lastName = parts.getOrNull(1),
-            role = data.role.name, acceptedTerms = data.acceptedTerms,
+            fullName = Validators.normalizeFullName(data.fullName),
+            dni = data.dni.trim(),
+            email = data.email.trim(),
+            password = data.password,
+            confirmPassword = data.confirmPassword ?: data.password,
+            role = data.role.name,
+            acceptedTerms = data.acceptedTerms,
+            acceptedPrivacyPolicy = data.acceptedPrivacyPolicy,
             specialty = data.specialty?.trim()?.takeIf { data.role == Role.PSYCHOLOGIST },
             licenseNumber = data.licenseNumber?.trim()?.takeIf { data.role == Role.PSYCHOLOGIST }
         )
@@ -109,9 +114,10 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateMe(data: UpdateProfileData): Outcome<UserProfile> {
         val body = UpdateUserDto(
-            username = data.email.trim(), email = data.email.trim(), fullName = data.fullName.trim(),
+            username = data.email.trim(), email = data.email.trim(), fullName = Validators.normalizeFullName(data.fullName),
             phoneNumber = data.phoneNumber?.trim()?.ifBlank { null }, ageRange = data.ageRange,
-            occupation = data.occupation?.trim()?.ifBlank { null }, workType = data.workType
+            occupation = data.occupation?.trim()?.ifBlank { null }, workType = data.workType,
+            currentPassword = data.currentPassword?.ifBlank { null }
         )
         val result = apiCall({ api.updateUser(sessions.requireUserId(), body) }) { it.toDomain() }
         if (result is Outcome.Success) {

@@ -87,8 +87,12 @@ class ViewModelTests {
     @Test
     fun register_psychologistRequiresLicense_userRequiresHealthConsent() {
         val vm = RegisterViewModel(mockk())
-        val base = vm.state.value.copy(fullName = "Ana Pérez", email = "ana@x.pe", password = "Clave2026", confirmPassword = "Clave2026", acceptedTerms = true)
-        val psychologistErrors = vm.validate(base.copy(role = Role.PSYCHOLOGIST, specialty = "Clínica", licenseNumber = ""))
+        // Updated: DNI and the Privacy Policy consent are now required, and the specialty comes from the backend catalog
+        val base = vm.state.value.copy(
+            fullName = "Ana Pérez", dni = "12345678", email = "ana@x.pe", password = "Clave2026", confirmPassword = "Clave2026",
+            acceptedTerms = true, acceptedPrivacyPolicy = true
+        )
+        val psychologistErrors = vm.validate(base.copy(role = Role.PSYCHOLOGIST, specialty = "clinical", licenseNumber = ""))
         assertTrue("license" in psychologistErrors)
         assertFalse("health" in psychologistErrors)
         val userErrors = vm.validate(base.copy(role = Role.USER, acceptedHealthData = false))

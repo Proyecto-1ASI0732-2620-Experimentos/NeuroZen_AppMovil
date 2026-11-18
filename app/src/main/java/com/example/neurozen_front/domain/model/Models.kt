@@ -24,6 +24,7 @@ data class Session(
         expiresAtEpochSeconds?.let { nowEpochSeconds >= it } ?: false
 }
 
+/** Sign-up data. The DNI and the passwords only travel in the request: they are never stored in the session. */
 data class RegisterData(
     val fullName: String,
     val email: String,
@@ -31,7 +32,10 @@ data class RegisterData(
     val role: Role,
     val acceptedTerms: Boolean,
     val specialty: String? = null,
-    val licenseNumber: String? = null
+    val licenseNumber: String? = null,
+    val dni: String = "",
+    val confirmPassword: String? = null,
+    val acceptedPrivacyPolicy: Boolean = false
 )
 
 data class UserProfile(
@@ -42,7 +46,9 @@ data class UserProfile(
     val phoneNumber: String?,
     val ageRange: String?,
     val occupation: String?,
-    val workType: String?
+    val workType: String?,
+    /** Own DNI from GET /users/{id}; "" when not registered. Kept only in memory (never in the Session). */
+    val dni: String = ""
 )
 
 data class UpdateProfileData(
@@ -51,7 +57,9 @@ data class UpdateProfileData(
     val phoneNumber: String?,
     val ageRange: String?,
     val occupation: String?,
-    val workType: String?
+    val workType: String?,
+    /** Required by the backend only when the email changes. */
+    val currentPassword: String? = null
 )
 
 enum class StressLevel(val label: String) {

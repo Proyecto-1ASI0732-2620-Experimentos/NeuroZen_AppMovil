@@ -23,8 +23,9 @@ class ValidatorsTest {
     @Test
     fun password() {
         assertTrue(Validators.isStrongPassword("Clave2026"))
-        assertEquals("Mínimo 8 caracteres", Validators.passwordError("a1"))
-        assertEquals("Debe tener letras y números", Validators.passwordError("solamenteletras"))
+        // Updated: same messages as the backend's PasswordPolicy
+        assertEquals("La contraseña debe tener al menos 8 caracteres", Validators.passwordError("a1"))
+        assertEquals("La contraseña debe incluir al menos una letra y un número", Validators.passwordError("solamenteletras"))
     }
 
     @Test

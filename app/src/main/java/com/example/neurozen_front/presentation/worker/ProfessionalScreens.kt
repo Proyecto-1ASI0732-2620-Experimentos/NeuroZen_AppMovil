@@ -1,5 +1,6 @@
 package com.example.neurozen_front.presentation.worker
 
+import com.example.neurozen_front.domain.logic.Catalogs
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -111,14 +112,14 @@ fun ProfessionalsScreen(onOpen: (Long) -> Unit, vm: ProfessionalsViewModel = hil
     StateContent(state, onRetry = { vm.load() }, emptyMessage = "Todavía no hay psicólogos verificados disponibles.") { all ->
         val specialties = all.map { it.specialty }.filter { it.isNotBlank() }.distinct().sorted()
         val filtered = all.filter {
-            (specialty == null || it.specialty == specialty) && (query.isBlank() || it.name.contains(query, true) || it.specialty.contains(query, true))
+            (specialty == null || it.specialty == specialty) && (query.isBlank() || it.name.contains(query, true) || it.specialty.contains(query, true) || Catalogs.specialtyLabel(it.specialty).contains(query, true))
         }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { GradientHeader("Centro de Ayuda", "Profesionales verificados por el CPsP, listos para escucharte") }
             item { NzTextField(query, { query = it }, "Buscar por nombre o especialidad", Modifier.padding(horizontal = 16.dp)) }
             if (specialties.isNotEmpty()) item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(specialties) { s -> FilterChip(selected = specialty == s, onClick = { specialty = if (specialty == s) null else s }, label = { Text(s) }) }
+                    items(specialties) { s -> FilterChip(selected = specialty == s, onClick = { specialty = if (specialty == s) null else s }, label = { Text(Catalogs.specialtyLabel(s)) }) }
                 }
             }
             if (filtered.isEmpty()) item { Text("Sin resultados.", Modifier.padding(horizontal = 16.dp)) }
@@ -144,7 +145,7 @@ private fun ProfessionalCard(p: Professional, onClick: () -> Unit) {
                         Text(p.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
                         Icon(Icons.Filled.Verified, contentDescription = "Verificado por CPsP", tint = NzColors.Turquoise, modifier = Modifier.padding(start = 4.dp).size(18.dp))
                     }
-                    Text(p.specialty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(Catalogs.specialtyLabel(p.specialty), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Star, contentDescription = null, tint = NzColors.Moderate, modifier = Modifier.size(16.dp))
                         Text(" ${"%.1f".format(p.rating)}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
@@ -208,7 +209,7 @@ fun ProfessionalDetailScreen(onBack: () -> Unit, onBook: () -> Unit, vm: Profess
                 LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     item {
                         GradientHeader(
-                            title = p.name, subtitle = p.specialty,
+                            title = p.name, subtitle = Catalogs.specialtyLabel(p.specialty),
                             trailing = { Avatar(p.name, 72, p.imageUrl, ring = true) },
                             bottom = {
                                 Spacer(Modifier.height(10.dp))

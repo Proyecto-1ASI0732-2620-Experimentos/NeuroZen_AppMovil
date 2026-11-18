@@ -23,6 +23,7 @@ object ErrorMapper {
             403 -> AppError.Forbidden(message ?: "No tienes permiso para realizar esta acción.")
             404 -> AppError.NotFound(message ?: "No encontramos lo que buscabas.")
             409 -> AppError.Conflict(message ?: "La operación entra en conflicto con datos existentes.")
+            429 -> AppError.TooManyRequests()
             in 500..599 -> AppError.Server(message ?: "El servidor tuvo un problema. Inténtalo más tarde.")
             else -> AppError.Server(message ?: "Error inesperado ($code).")
         }
