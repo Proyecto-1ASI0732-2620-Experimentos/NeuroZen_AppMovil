@@ -1,5 +1,11 @@
 package com.example.neurozen_front.presentation.auth
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -64,7 +70,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.neurozen_front.R
 import com.example.neurozen_front.domain.model.Role as UserRole
+import com.example.neurozen_front.domain.logic.Validators
+import com.example.neurozen_front.presentation.components.DigitsField
 import com.example.neurozen_front.presentation.components.ErrorBanner
+import com.example.neurozen_front.presentation.components.SpecialtyField
 import com.example.neurozen_front.presentation.components.NzTextField
 import com.example.neurozen_front.presentation.components.PasswordField
 import com.example.neurozen_front.presentation.components.PrimaryButton
@@ -249,24 +258,43 @@ fun RegisterScreen(onLogin: () -> Unit, vm: RegisterViewModel = hiltViewModel())
             Spacer(Modifier.height(24.dp))
         }
     ) {
-        NzTextField(s.fullName, { v -> vm.update { it.copy(fullName = v) } }, "Nombre completo", error = s.errors["fullName"])
-        NzTextField(s.email, { v -> vm.update { it.copy(email = v) } }, "Correo electrónico", error = s.errors["email"], keyboardType = KeyboardType.Email)
+        FormSection("Tus datos")
+        NzTextField(s.fullName, { v -> vm.update { it.copy(fullName = v.take(Validators.FULL_NAME_MAX_LENGTH)) } }, "Nombre completo",
+            Modifier.testTag("register_name"), error = s.errors["fullName"],
+            supporting = if (isPsychologist) "Debe coincidir con tu DNI y tu registro en el CPsP." else null)
+        // DNI: required for every role; only the format is validated (it is not checked against RENIEC)
+        DigitsField(s.dni, { v -> vm.update { it.copy(dni = v) } }, "DNI", Validators.DNI_LENGTH, Modifier.testTag("register_dni"),
+            error = s.errors["dni"], supporting = "Solo números: exactamente 8 dígitos, sin espacios.")
+        NzTextField(s.email, { v -> vm.update { it.copy(email = v) } }, "Correo electrónico", Modifier.testTag("register_email"),
+            error = s.errors["email"], keyboardType = KeyboardType.Email)
         if (isPsychologist) {
-            NzTextField(s.specialty, { v -> vm.update { it.copy(specialty = v) } }, "Especialidad (ej: Terapia Cognitivo Conductual)", error = s.errors["specialty"])
-            NzTextField(
-                s.licenseNumber, { v -> vm.update { it.copy(licenseNumber = v.filter(Char::isDigit)) } }, "N.° de colegiatura (CPsP)",
-                error = s.errors["license"], keyboardType = KeyboardType.Number,
+            FormSection("Datos profesionales")
+            SpecialtyField(s.specialty, { v -> vm.update { it.copy(specialty = v) } }, error = s.errors["specialty"])
+            DigitsField(
+                s.licenseNumber, { v -> vm.update { it.copy(licenseNumber = v) } }, "N.° de colegiatura (CPsP)", Validators.LICENSE_MAX_LENGTH,
+                Modifier.testTag("register_license"), error = s.errors["license"],
                 supporting = "Un administrador lo validará en el portal del CPsP antes de que recibas citas."
             )
         }
+        FormSection("Acceso")
         PasswordField(s.password, { v -> vm.update { it.copy(password = v) } }, error = s.errors["password"])
+        PasswordRequirements(s.password)
         PasswordField(s.confirmPassword, { v -> vm.update { it.copy(confirmPassword = v) } }, "Confirmar contraseña", s.errors["confirm"])
+        // Two separate consents, never pre-checked (Ley 29733). The existing legal summary is reused, not rewritten.
+        FormSection("Consentimientos")
         CheckRow(
-            checked = s.acceptedTerms, error = s.errors["terms"],
-            text = "Acepto los términos y la política de privacidad (Ley 29733)",
+            checked = s.acceptedTerms, error = s.errors["terms"], tag = "register_terms",
+            text = "Acepto los Términos y Condiciones",
             onChange = { v -> vm.update { it.copy(acceptedTerms = v) } }
         )
-        TextButton(onClick = { showTerms = !showTerms }) { Text(if (showTerms) "Ocultar términos" else "Leer términos", color = MaterialTheme.colorScheme.primary) }
+        CheckRow(
+            checked = s.acceptedPrivacyPolicy, error = s.errors["privacy"], tag = "register_privacy",
+            text = "Acepto la Política de Privacidad y el tratamiento de mis datos personales (Ley 29733)",
+            onChange = { v -> vm.update { it.copy(acceptedPrivacyPolicy = v) } }
+        )
+        TextButton(onClick = { showTerms = !showTerms }) {
+            Text(if (showTerms) "Ocultar términos y política" else "Leer términos y política de privacidad", color = MaterialTheme.colorScheme.primary)
+        }
         if (showTerms) {
             Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp)) {
                 Text(TERMS_SUMMARY, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(12.dp))
@@ -274,14 +302,14 @@ fun RegisterScreen(onLogin: () -> Unit, vm: RegisterViewModel = hiltViewModel())
         }
         if (!isPsychologist) {
             CheckRow(
-                checked = s.acceptedHealthData, error = s.errors["health"],
+                checked = s.acceptedHealthData, error = s.errors["health"], tag = "register_health",
                 text = "Autorizo el tratamiento de mis datos de salud (registros de estrés, tests) para fines de bienestar. Puedo eliminar mi cuenta y mis datos en cualquier momento.",
                 onChange = { v -> vm.update { it.copy(acceptedHealthData = v) } }
             )
         }
-        s.error?.let { ErrorBanner(it) }
+        s.error?.let { ErrorBanner(it, Modifier.testTag("register_error")) }
         Spacer(Modifier.height(8.dp))
-        PrimaryButton(if (isPsychologist) "Registrarme como Psicólogo" else "Registrarse", vm::submit, loading = s.loading)
+        PrimaryButton(if (isPsychologist) "Registrarme como Psicólogo" else "Registrarse", vm::submit, Modifier.testTag("register_submit"), loading = s.loading)
         TextButton(onClick = onLogin, modifier = Modifier.align(Alignment.CenterHorizontally)) {
             Text("¿Ya tienes cuenta? Inicia sesión", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
         }
@@ -293,11 +321,41 @@ private const val TERMS_SUMMARY =
         "Tus datos se usan solo para mostrarte tu progreso y, si tú lo decides, compartir un informe con tu psicólogo. " +
         "Puedes eliminar tu cuenta y tus datos personales desde Perfil > Eliminar cuenta (Ley 29733)."
 
+/** Small caps title that groups the fields of the form. */
 @Composable
-private fun CheckRow(checked: Boolean, text: String, error: String?, onChange: (Boolean) -> Unit) {
+private fun FormSection(title: String) {
+    Text(
+        title.uppercase(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp,
+        color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp).semantics { heading() }
+    )
+}
+
+/** Live checklist of the backend's password rules (8+ characters, one letter and one number). */
+@Composable
+private fun PasswordRequirements(password: String) {
+    val rules = listOf(
+        "Al menos 8 caracteres" to (password.length >= 8),
+        "Una letra y un número" to (password.any { it.isLetter() } && password.any { it.isDigit() })
+    )
+    Column(Modifier.padding(start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        rules.forEach { (label, ok) ->
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(
+                    if (ok) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked, contentDescription = if (ok) "Cumplido" else "Pendiente",
+                    tint = if (ok) NzColors.Low else MaterialTheme.colorScheme.outline, modifier = Modifier.size(16.dp)
+                )
+                Text(label, style = MaterialTheme.typography.bodySmall, color = if (ok) NzColors.Low else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CheckRow(checked: Boolean, text: String, error: String?, tag: String? = null, onChange: (Boolean) -> Unit) {
     Column {
         Row(
-            Modifier.fillMaxWidth().toggleable(value = checked, onValueChange = onChange, role = Role.Checkbox),
+            Modifier.fillMaxWidth().then(if (tag != null) Modifier.testTag(tag) else Modifier)
+                .toggleable(value = checked, onValueChange = onChange, role = Role.Checkbox),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(checked = checked, onCheckedChange = null)

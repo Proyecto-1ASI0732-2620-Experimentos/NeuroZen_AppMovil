@@ -116,8 +116,10 @@ fun ErrorView(message: String, onRetry: (() -> Unit)? = null) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(Icons.Outlined.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-        Spacer(Modifier.height(12.dp))
+        Box(Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
+            Icon(Icons.Outlined.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(34.dp))
+        }
+        Spacer(Modifier.height(14.dp))
         Text(message, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
         if (onRetry != null) {
             Spacer(Modifier.height(16.dp))

@@ -390,7 +390,7 @@ fun SymptomsScreen(onBack: () -> Unit, vm: SymptomsViewModel = hiltViewModel()) 
                     Slider(form.stressLevel.toFloat(), { v -> vm.update { it.copy(stressLevel = v.toInt()) } }, valueRange = 1f..10f, steps = 8)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         NzTextField(form.sleepHours, { v -> vm.update { it.copy(sleepHours = v) } }, "Horas de sueño", Modifier.weight(1f), keyboardType = KeyboardType.Decimal)
-                        NzTextField(form.heartRate, { v -> vm.update { it.copy(heartRate = v.filter(Char::isDigit)) } }, "Pulso (lpm)", Modifier.weight(1f), keyboardType = KeyboardType.Number)
+                        NzTextField(form.heartRate, { v -> vm.update { it.copy(heartRate = com.example.neurozen_front.domain.logic.Validators.digitsOnly(v, 3)) } }, "Pulso (lpm)", Modifier.weight(1f), keyboardType = KeyboardType.Number)
                     }
                     NzTextField(form.notes, { v -> vm.update { it.copy(notes = v.take(300)) } }, "Notas (opcional)", singleLine = false, minLines = 2)
                     PrimaryButton("Guardar", vm::save, loading = form.saving)

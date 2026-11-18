@@ -38,11 +38,42 @@ object Catalogs {
 
     val ANSWER_OPTIONS = listOf("Nunca", "Casi nunca", "A veces", "Con frecuencia", "Muy a menudo")
 
+    /**
+     * planId 1 = Básico, 2 = Avanzado, 3 = Profesional: the same ids and names the backend uses (its library answers
+     * "Este recurso está disponible desde el plan Avanzado") and the web shows.
+     */
     val PLANS = listOf(
-        SubscriptionPlan(1, "Básico", 0.0, listOf("Registro de estrés", "Test de autoevaluación", "Respiración guiada")),
-        SubscriptionPlan(2, "Premium", 29.90, listOf("Todo lo del plan Básico", "Biblioteca completa", "Informes para tu psicólogo")),
-        SubscriptionPlan(3, "Empresarial", 99.90, listOf("Todo lo de Premium", "Acompañamiento para equipos", "Soporte prioritario"))
+        SubscriptionPlan(1, "Básico", 0.0, listOf("Registro de estrés", "Test de autoevaluación", "Parte de la biblioteca (videos y audios)")),
+        SubscriptionPlan(2, "Avanzado", 29.90, listOf("Todo lo del plan Básico", "Biblioteca completa", "Informes para tu psicólogo")),
+        SubscriptionPlan(3, "Profesional", 99.90, listOf("Todo lo del plan Avanzado", "Contenido exclusivo de la biblioteca", "Soporte prioritario"))
     )
+
+    fun planName(planId: Int?): String = PLANS.firstOrNull { it.id == planId }?.name ?: "Básico"
+
+    /** Closed catalog of the backend (values sent as-is); labels match the web. */
+    val SPECIALTIES = listOf(
+        Category("clinical", "Psicología clínica"),
+        Category("organizational", "Psicología organizacional"),
+        Category("educational", "Psicología educativa"),
+        Category("family", "Psicología familiar y de pareja"),
+        Category("childAdolescent", "Psicología infantil y del adolescente"),
+        Category("health", "Psicología de la salud"),
+        Category("social", "Psicología social y comunitaria"),
+        Category("neuropsychology", "Neuropsicología")
+    )
+
+    /** "clinical" → "Psicología clínica"; unknown values (old free text) are shown as they come. */
+    fun specialtyLabel(key: String?): String =
+        SPECIALTIES.firstOrNull { it.key.equals(key?.trim(), ignoreCase = true) }?.label ?: key.orEmpty()
+
+    /** Backend accepts only "formal" or "informal" (UserProfileRules.WorkTypes). */
+    val WORK_TYPES = listOf(Category("formal", "Formal"), Category("informal", "Informal"))
+
+    fun workTypeLabel(key: String?): String? =
+        key?.let { k -> WORK_TYPES.firstOrNull { it.key.equals(k, ignoreCase = true) }?.label ?: k }
+
+    /** Backend values (UserProfileRules.AgeRanges). */
+    val AGE_RANGES = listOf("18-24", "25-34", "35-44", "45-54", "55+")
 
     data class BreathingExercise(val id: String, val name: String, val description: String, val phases: List<Pair<String, Int>>, val cycles: Int)
 

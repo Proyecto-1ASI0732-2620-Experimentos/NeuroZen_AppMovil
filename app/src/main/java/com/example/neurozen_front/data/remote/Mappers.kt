@@ -3,6 +3,7 @@ package com.example.neurozen_front.data.remote
 import com.example.neurozen_front.domain.logic.AssessmentScoring
 import com.example.neurozen_front.domain.logic.DateTimeUtils.parseInstant
 import com.example.neurozen_front.domain.logic.JwtDecoder
+import com.example.neurozen_front.domain.logic.YouTube
 import com.example.neurozen_front.domain.model.Appointment
 import com.example.neurozen_front.domain.model.AppointmentStatus
 import com.example.neurozen_front.domain.model.AppointmentType
@@ -39,7 +40,8 @@ fun AuthenticatedUserDto.toSession(): Session {
 
 fun UserDto.toDomain() = UserProfile(
     id = id ?: 0, email = email.orEmpty(), fullName = fullName.orEmpty(), role = Role.from(role),
-    phoneNumber = phoneNumber, ageRange = ageRange, occupation = occupation, workType = workType
+    phoneNumber = phoneNumber, ageRange = ageRange, occupation = occupation, workType = workType,
+    dni = dni?.trim().orEmpty()
 )
 
 fun TriggerDto.toDomain() = StressTrigger(
@@ -99,10 +101,16 @@ fun ReportDto.toDomain() = Report(
     note = note, createdAt = parseInstant(createdAt)
 )
 
-fun ResourceDto.toDomain() = LibraryResource(
-    id = id ?: 0, title = title.orEmpty(), description = description.orEmpty(), content = content,
-    type = resourceType ?: "article", contentUrl = contentUrl?.takeIf { it.startsWith("https://") }, durationMinutes = duration ?: 0,
-    thumbnail = thumbnail?.takeIf { it.startsWith("https://") }, tags = tags.orEmpty(), author = author
-)
+fun ResourceDto.toDomain(): LibraryResource {
+    val url = contentUrl?.takeIf { it.startsWith("https://") }
+    // Thumbnail of the API; if it comes empty, the one of its YouTube video (videos and audios).
+    val fallbackThumbnail = YouTube.videoId(url)?.let(YouTube::thumbnailUrl)
+    return LibraryResource(
+        id = id ?: 0, title = title.orEmpty(), description = description.orEmpty(), content = content,
+        type = resourceType ?: "article", contentUrl = url, durationMinutes = duration ?: 0,
+        thumbnail = thumbnail?.takeIf { it.startsWith("https://") } ?: fallbackThumbnail, tags = tags.orEmpty(),
+        author = author?.takeIf { it.isNotBlank() }
+    )
+}
 
 fun SubscriptionDto.toDomain() = Subscription(id ?: 0, planId ?: 0, isActive ?: false, cardLast4, expirationDate)

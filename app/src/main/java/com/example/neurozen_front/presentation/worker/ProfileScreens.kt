@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.EmojiEvents
@@ -100,8 +101,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-val AGE_RANGES = listOf("18-24", "25-34", "35-44", "45-54", "55+")
-val WORK_TYPES = listOf("Presencial", "Remoto", "Híbrido")
+/** Backend values: ageRange 18-24…55+, workType formal/informal (before: "Presencial/Remoto/Híbrido" → 400). */
+val AGE_RANGES = Catalogs.AGE_RANGES
+val WORK_TYPES = Catalogs.WORK_TYPES
 
 data class ProfileOverview(
     val user: UserProfile,
@@ -214,7 +216,10 @@ fun ProfileScreen(onNavigate: (String) -> Unit, onLogout: () -> Unit, vm: Profil
                     }
                     item {
                         SettingsGroup("Información personal", Modifier.padding(horizontal = 20.dp)) {
-                            ListRow(Icons.Outlined.Person, "Datos personales", listOfNotNull(user.occupation, user.workType).joinToString(" · ").ifBlank { "Nombre, correo, teléfono" }) { onNavigate("profile_edit") }
+                            ListRow(Icons.Outlined.Person, "Datos personales", listOfNotNull(user.occupation, Catalogs.workTypeLabel(user.workType)).joinToString(" · ").ifBlank { "Nombre, correo, teléfono" }) { onNavigate("profile_edit") }
+                            GroupDivider()
+                            // DNI: read only (PUT /users/{id} ignores it), masked; "No registrado" for old accounts
+                            DniRow(user.dni)
                             GroupDivider()
                             ListRow(Icons.Outlined.Cake, "Rango de edad", trailingText = user.ageRange ?: "Sin definir") { onNavigate("profile_edit") }
                             GroupDivider()
@@ -273,13 +278,34 @@ fun ProfileScreen(onNavigate: (String) -> Unit, onLogout: () -> Unit, vm: Profil
     )
 }
 
+/** Own DNI, masked by default; tapping shows it. Kept only in memory (never in DataStore). */
+@Composable
+private fun DniRow(dni: String) {
+    var visible by remember { mutableStateOf(false) }
+    val value = when {
+        dni.isBlank() -> "No registrado"
+        visible -> dni
+        else -> Validators.maskDni(dni)
+    }
+    ListRow(
+        Icons.Outlined.Badge, "DNI", "No se puede modificar desde el perfil", trailingText = value,
+        showChevron = false, onClick = if (dni.isBlank()) null else ({ visible = !visible })
+    )
+}
+
 // ---------- Edit profile / onboarding fields ----------
 
 data class ProfileForm(
     val fullName: String = "", val email: String = "", val phone: String = "",
     val ageRange: String? = null, val occupation: String = "", val workType: String? = null,
+    /** Original values: the backend asks for the current password only when the email changes. */
+    val originalEmail: String = "", val originalName: String = "", val currentPassword: String = "",
     val loaded: Boolean = false, val saving: Boolean = false, val saved: Boolean = false, val error: String? = null
-)
+) {
+    val emailChanged: Boolean get() = loaded && !email.trim().equals(originalEmail.trim(), ignoreCase = true)
+}
+
+private val PHONE = Regex("""^\+?[0-9]{9,12}$""")
 
 @HiltViewModel
 class ProfileEditViewModel @Inject constructor(private val users: UserRepository) : ViewModel() {
@@ -290,7 +316,12 @@ class ProfileEditViewModel @Inject constructor(private val users: UserRepository
         viewModelScope.launch {
             when (val r = users.getMe()) {
                 is Outcome.Success -> r.data.let { u ->
-                    _form.value = ProfileForm(u.fullName, u.email, u.phoneNumber.orEmpty(), u.ageRange, u.occupation.orEmpty(), u.workType, loaded = true)
+                    // Old values outside the backend catalog (e.g. "Remoto") are not re-sent.
+                    val workType = u.workType?.takeIf { w -> WORK_TYPES.any { it.key.equals(w, ignoreCase = true) } }?.lowercase()
+                    _form.value = ProfileForm(
+                        u.fullName, u.email, u.phoneNumber.orEmpty(), u.ageRange, u.occupation.orEmpty(), workType,
+                        originalEmail = u.email, originalName = u.fullName, loaded = true
+                    )
                 }
                 is Outcome.Failure -> _form.update { it.copy(loaded = true, error = r.error.message) }
             }
@@ -301,17 +332,25 @@ class ProfileEditViewModel @Inject constructor(private val users: UserRepository
 
     fun save() {
         val f = _form.value
+        val nameChanged = Validators.normalizeFullName(f.fullName) != Validators.normalizeFullName(f.originalName)
         val error = when {
-            f.fullName.isBlank() -> "Ingresa tu nombre"
+            f.fullName.isBlank() -> "Ingresa tu nombre y apellido"
+            // Same rules as the backend; an old name that is not changed does not block saving.
+            nameChanged && Validators.fullNameError(f.fullName) != null -> Validators.fullNameError(f.fullName)
             !Validators.isValidEmail(f.email) -> "Correo inválido"
-            f.phone.isNotBlank() && !Regex("""^\+?\d{9,12}$""").matches(f.phone) -> "Teléfono inválido"
+            f.emailChanged && f.currentPassword.isBlank() -> "Para cambiar el correo, ingresa tu contraseña actual"
+            f.phone.isNotBlank() && !PHONE.matches(f.phone) -> "Teléfono inválido"
             else -> null
         }
         if (error != null) { _form.update { it.copy(error = error) }; return }
         _form.update { it.copy(saving = true) }
         viewModelScope.launch {
-            when (val r = users.updateMe(UpdateProfileData(f.fullName, f.email, f.phone, f.ageRange, f.occupation, f.workType))) {
-                is Outcome.Success -> _form.update { it.copy(saving = false, saved = true) }
+            val data = UpdateProfileData(
+                f.fullName, f.email, f.phone, f.ageRange, f.occupation, f.workType,
+                currentPassword = f.currentPassword.takeIf { f.emailChanged }
+            )
+            when (val r = users.updateMe(data)) {
+                is Outcome.Success -> _form.update { it.copy(saving = false, saved = true, currentPassword = "") }
                 is Outcome.Failure -> _form.update { it.copy(saving = false, error = r.error.message) }
             }
         }
@@ -331,6 +370,9 @@ fun ProfileEditScreen(isOnboarding: Boolean, onDone: () -> Unit, onBack: () -> U
             if (!isOnboarding) {
                 NzTextField(f.fullName, { v -> vm.update { it.copy(fullName = v) } }, "Nombre completo")
                 NzTextField(f.email, { v -> vm.update { it.copy(email = v) } }, "Correo", keyboardType = KeyboardType.Email)
+                if (f.emailChanged) {
+                    PasswordField(f.currentPassword, { v -> vm.update { it.copy(currentPassword = v) } }, "Contraseña actual (para cambiar el correo)")
+                }
                 NzTextField(f.phone, { v -> vm.update { it.copy(phone = v) } }, "Teléfono (opcional)", keyboardType = KeyboardType.Phone)
             }
             Text("Edad", style = MaterialTheme.typography.labelLarge)
@@ -340,7 +382,9 @@ fun ProfileEditScreen(isOnboarding: Boolean, onDone: () -> Unit, onBack: () -> U
             NzTextField(f.occupation, { v -> vm.update { it.copy(occupation = v.take(80)) } }, "Ocupación (opcional)")
             Text("Modalidad de trabajo", style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                WORK_TYPES.forEach { w -> FilterChip(selected = f.workType == w, onClick = { vm.update { it.copy(workType = if (it.workType == w) null else w) } }, label = { Text(w) }) }
+                WORK_TYPES.forEach { w ->
+                    FilterChip(selected = f.workType == w.key, onClick = { vm.update { it.copy(workType = if (it.workType == w.key) null else w.key) } }, label = { Text(w.label) })
+                }
             }
             f.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             PrimaryButton(if (isOnboarding) "Continuar al test" else "Guardar", vm::save, loading = f.saving, enabled = f.loaded)
@@ -492,10 +536,10 @@ fun SubscriptionScreen(onBack: () -> Unit, vm: SubscriptionViewModel = hiltViewM
                     NzTextField(f.lastName, { v -> vm.update { it.copy(lastName = v) } }, "Apellido", Modifier.weight(1f))
                 }
                 NzTextField(f.email, { v -> vm.update { it.copy(email = v) } }, "Correo", keyboardType = KeyboardType.Email)
-                NzTextField(f.card, { v -> vm.update { it.copy(card = v.filter(Char::isDigit).take(19)) } }, "Número de tarjeta", keyboardType = KeyboardType.Number)
+                NzTextField(f.card, { v -> vm.update { it.copy(card = Validators.digitsOnly(v, 19)) } }, "Número de tarjeta", keyboardType = KeyboardType.Number)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     NzTextField(f.expiration, { v -> vm.update { it.copy(expiration = formatExpiry(v)) } }, "MM/AA", Modifier.weight(1f), keyboardType = KeyboardType.Number)
-                    NzTextField(f.cvv, { v -> vm.update { it.copy(cvv = v.filter(Char::isDigit).take(4)) } }, "CVV", Modifier.weight(1f), keyboardType = KeyboardType.NumberPassword)
+                    NzTextField(f.cvv, { v -> vm.update { it.copy(cvv = Validators.digitsOnly(v, 4)) } }, "CVV", Modifier.weight(1f), keyboardType = KeyboardType.NumberPassword)
                 }
                 f.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 PrimaryButton("Suscribirme", vm::pay, loading = f.paying)
@@ -507,6 +551,6 @@ fun SubscriptionScreen(onBack: () -> Unit, vm: SubscriptionViewModel = hiltViewM
 }
 
 private fun formatExpiry(input: String): String {
-    val digits = input.filter(Char::isDigit).take(4)
+    val digits = Validators.digitsOnly(input, 4)
     return if (digits.length > 2) digits.substring(0, 2) + "/" + digits.substring(2) else digits
 }

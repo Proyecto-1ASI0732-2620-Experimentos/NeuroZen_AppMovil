@@ -40,10 +40,14 @@ class SessionRepositoryImpl @Inject constructor(
     private val _session = MutableStateFlow<Session?>(null)
     private val _isLoaded = MutableStateFlow(false)
     private val _expired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val _notVerified = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     override val session: StateFlow<Session?> = _session.asStateFlow()
     override val isLoaded: StateFlow<Boolean> = _isLoaded.asStateFlow()
     val expiredEvents: SharedFlow<Unit> = _expired.asSharedFlow()
+
+    /** 403 «cuenta profesional no verificada» on any call: the psychologist app reloads its verification status. */
+    override val professionalNotVerifiedEvents: SharedFlow<Unit> = _notVerified.asSharedFlow()
 
     init {
         scope.launch {
@@ -90,6 +94,11 @@ class SessionRepositoryImpl @Inject constructor(
     /** Called by the interceptor on a 401 of an authenticated request (never on business errors). */
     fun notifyExpired() {
         if (_session.value != null) _expired.tryEmit(Unit)
+    }
+
+    /** Called by the interceptor on a 403 «Tu cuenta profesional aún no está verificada». */
+    fun notifyProfessionalNotVerified() {
+        if (_session.value?.role == com.example.neurozen_front.domain.model.Role.PSYCHOLOGIST) _notVerified.tryEmit(Unit)
     }
 
     private fun welcomeKey(userId: Long) = booleanPreferencesKey("verified_welcome_$userId")

@@ -100,9 +100,9 @@ fun WorkerNavHost(onLogout: () -> Unit, shell: WorkerShellViewModel = hiltViewMo
             composable("breaks") { RemindersScreen(onBack = { nav.popBackStack() }) }
             composable("workload") { WorkloadScreen(onBack = { nav.popBackStack() }, onReminders = { nav.navigate("breaks") }) }
             composable("challenges") { ChallengesScreen(onBack = { nav.popBackStack() }) }
-            composable("library") { LibraryScreen(onBack = { nav.popBackStack() }, onOpen = { nav.navigate("library/$it") }) }
+            composable("library") { LibraryScreen(onBack = { nav.popBackStack() }, onOpen = { nav.navigate("library/$it") }, onUpgrade = { nav.navigate("subscription") }) }
             composable("library/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
-                LibraryDetailScreen(onBack = { nav.popBackStack() })
+                LibraryDetailScreen(onBack = { nav.popBackStack() }, onUpgrade = { nav.navigate("subscription") })
             }
             composable("professionals") { ProfessionalsScreen(onOpen = { nav.navigate("professional/$it") }) }
             composable("professional/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->

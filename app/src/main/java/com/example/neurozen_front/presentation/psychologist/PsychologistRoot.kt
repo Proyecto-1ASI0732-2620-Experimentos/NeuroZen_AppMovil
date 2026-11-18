@@ -1,5 +1,8 @@
 package com.example.neurozen_front.presentation.psychologist
 
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.testTag
+import com.example.neurozen_front.domain.logic.AvailabilityDraft
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -52,7 +55,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.neurozen_front.domain.logic.Catalogs
 import com.example.neurozen_front.domain.logic.Validators
+import com.example.neurozen_front.presentation.components.DigitsField
+import com.example.neurozen_front.presentation.components.SpecialtyField
 import com.example.neurozen_front.domain.model.AppError
 import com.example.neurozen_front.domain.model.Outcome
 import com.example.neurozen_front.domain.model.ProfessionalProfile
@@ -98,7 +104,17 @@ class PsychologistViewModel @Inject constructor(
     private val _message = MutableStateFlow<String?>(null)
     val message = _message.asStateFlow()
 
-    init { load() }
+    init {
+        load()
+        // 403 «Tu cuenta profesional aún no está verificada» on any call (agenda, confirm, complete...): the profile went
+        // back to PENDING. Reloading the profile shows the verification status screen instead of a generic error.
+        viewModelScope.launch {
+            sessions.professionalNotVerifiedEvents.collect {
+                load()
+                _message.value = "Tu cuenta profesional volvió a revisión del administrador."
+            }
+        }
+    }
 
     fun load() = viewModelScope.launch {
         _state.value = ProRootState.Loading
@@ -117,15 +133,32 @@ class PsychologistViewModel @Inject constructor(
         _state.value = ready.copy(showWelcome = false)
     }
 
-    /** PUT /professionals/me always sends the whole profile. */
+    /**
+     * PUT /professionals/me always sends the whole profile. Changing the name or the license sends the profile back to
+     * PENDING (decided by the backend): the profile is read again and, if it is not VERIFIED, PsychologistRoot shows
+     * the verification status screen.
+     */
     fun save(transform: (UpdateProfessionalData) -> UpdateProfessionalData, successMessage: String) {
         val ready = _state.value as? ProRootState.Ready ?: return
         val p = ready.profile
         val base = UpdateProfessionalData(p.name, p.specialty, p.licenseNumber, p.bio, p.experienceYears, p.price, p.schedule, p.availability)
+        val changes = transform(base)
+        // The backend requires the schedule in every PUT: without one it would answer 400
+        if (!AvailabilityDraft.hasSchedule(changes.schedule)) {
+            _message.value = "Primero indica tus días y horario de atención (en Perfil o Agenda)."
+            return
+        }
+        val identityChanged = Validators.normalizeFullName(changes.fullName) != Validators.normalizeFullName(p.name) ||
+            changes.licenseNumber.trim() != p.licenseNumber.trim()
         _saving.value = true
         viewModelScope.launch {
-            when (val r = professionals.updateMyProfile(transform(base))) {
-                is Outcome.Success -> { _state.value = ready.copy(profile = r.data); _message.value = successMessage }
+            when (val r = professionals.updateMyProfile(changes)) {
+                is Outcome.Success -> {
+                    val fresh = if (identityChanged) (professionals.getMyProfile() as? Outcome.Success)?.data ?: r.data else r.data
+                    _state.value = ready.copy(profile = fresh, showWelcome = false)
+                    _message.value = if (identityChanged && fresh.status != VerificationStatus.VERIFIED)
+                        "Tus datos se actualizaron. Tu cuenta volvió a revisión del administrador." else successMessage
+                }
                 is Outcome.Failure -> _message.value = r.error.message
             }
             _saving.value = false
@@ -160,8 +193,12 @@ private fun VerificationStatusScreen(profile: ProfessionalProfile, vm: Psycholog
     val saving by vm.saving.collectAsState()
     val message by vm.message.collectAsState()
     var fullName by rememberSaveable { mutableStateOf(profile.name) }
-    var license by rememberSaveable { mutableStateOf(profile.licenseNumber) }
+    var license by rememberSaveable { mutableStateOf(Validators.digitsOnly(profile.licenseNumber, Validators.LICENSE_MAX_LENGTH)) }
     var specialty by rememberSaveable { mutableStateOf(profile.specialty) }
+    val nameError = Validators.fullNameError(fullName)
+    // Without a saved schedule the backend rejects the re-submission, and the Agenda is locked until verification
+    val needsSchedule = !AvailabilityDraft.hasSchedule(profile.schedule)
+    var availability by remember(profile.schedule) { mutableStateOf(AvailabilityDraft.from(profile.schedule)) }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -172,13 +209,22 @@ private fun VerificationStatusScreen(profile: ProfessionalProfile, vm: Psycholog
             VerificationStatus.REJECTED -> {
                 InfoBanner("Tu solicitud fue rechazada. Motivo: ${profile.rejectionReason ?: "no especificado"}", NzColors.High)
                 Text("Corrige tus datos y vuelve a enviarla. Pasará otra vez a revisión.")
-                NzTextField(fullName, { fullName = it }, "Nombre completo (como figura en el CPsP)")
-                NzTextField(license, { license = it.filter(Char::isDigit) }, "N.° de colegiatura CPsP",
-                    error = if (Validators.isValidLicense(license)) null else "Solo números")
-                NzTextField(specialty, { specialty = it }, "Especialidad")
+                NzTextField(fullName, { fullName = it.take(Validators.FULL_NAME_MAX_LENGTH) }, "Nombre completo (como figura en el CPsP)", error = nameError)
+                DigitsField(license, { license = it }, "N.° de colegiatura CPsP", Validators.LICENSE_MAX_LENGTH,
+                    error = if (Validators.isValidLicense(license)) null else "El número de colegiatura debe tener entre 3 y 6 dígitos")
+                SpecialtyField(specialty, { specialty = it },
+                    error = if (Catalogs.SPECIALTIES.any { it.key == specialty }) null else "Selecciona una especialidad válida")
+                if (needsSchedule) {
+                    Text("Indica también tus días y horario de atención:", style = MaterialTheme.typography.bodyMedium)
+                    AvailabilityEditor(availability, { availability = it }, Modifier.testTag("resubmit_availability"))
+                }
                 PrimaryButton("Reenviar solicitud", onClick = {
-                    vm.save({ it.copy(fullName = fullName, licenseNumber = license, specialty = specialty) }, "Solicitud reenviada. Está nuevamente en revisión.")
-                }, loading = saving, enabled = Validators.isValidLicense(license) && fullName.isNotBlank())
+                    vm.save({ base ->
+                        val updated = base.copy(fullName = Validators.normalizeFullName(fullName), licenseNumber = license, specialty = specialty)
+                        if (needsSchedule) updated.copy(schedule = availability.toSchedule(), availability = availability.summary()) else updated
+                    }, "Solicitud reenviada. Está nuevamente en revisión.")
+                }, loading = saving, enabled = Validators.isValidLicense(license) && nameError == null && Catalogs.SPECIALTIES.any { it.key == specialty } &&
+                    (!needsSchedule || availability.isValid))
             }
             else -> {
                 InfoBanner("Estamos verificando tu colegiatura N.° ${profile.licenseNumber} en el portal del Colegio de Psicólogos del Perú. Mientras tanto no aparecerás en el directorio ni podrás recibir citas.")

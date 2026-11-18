@@ -9,15 +9,22 @@ data class MessageDto(val message: String?)
 
 data class SignInDto(val username: String, val password: String)
 
+/**
+ * POST /authentication/sign-up with exactly the 10 fields of the backend (one field per piece of data):
+ * fullName, dni, email, password, confirmPassword, role, acceptedTerms, acceptedPrivacyPolicy, specialty, licenseNumber.
+ * username/firstName/lastName no longer exist (the backend ignores them and requires fullName and email).
+ * dni (8 digits) is required for every role; confirmPassword is never stored; the two consents are separate (Ley 29733).
+ * The response (AuthenticatedUserDto) does NOT include the DNI. Sign-in still uses { username: <email>, password }.
+ */
 data class SignUpDto(
-    val username: String,
+    val fullName: String,
+    val dni: String,
     val email: String,
     val password: String,
-    val fullName: String,
-    val firstName: String?,
-    val lastName: String?,
+    val confirmPassword: String,
     val role: String,
     val acceptedTerms: Boolean,
+    val acceptedPrivacyPolicy: Boolean,
     val specialty: String? = null,
     val licenseNumber: String? = null
 )
@@ -30,12 +37,19 @@ data class ChangePasswordDto(val currentPassword: String, val newPassword: Strin
 data class UserDto(
     val id: Long?, val email: String?, val fullName: String?, val role: String?, val phoneNumber: String?,
     val address: String?, val avatarUrl: String?, val dateOfBirth: String?, val ageRange: String?,
-    val occupation: String?, val workType: String?, val createdAt: String?
+    val occupation: String?, val workType: String?, val createdAt: String?,
+    /** Own DNI ("" for accounts created before it was required). Read only: PUT /users/{id} ignores it. */
+    val dni: String? = null
 )
 
+/**
+ * PUT /users/{id}. Null fields are not serialized (Gson) and the backend keeps their current value.
+ * The DNI is never sent. currentPassword is required by the backend only when the email changes.
+ */
 data class UpdateUserDto(
     val username: String?, val email: String?, val fullName: String?, val phoneNumber: String?,
-    val ageRange: String?, val occupation: String?, val workType: String?
+    val ageRange: String?, val occupation: String?, val workType: String?,
+    val currentPassword: String? = null
 )
 
 data class TriggerDto(
