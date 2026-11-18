@@ -105,4 +105,29 @@ class RegisterViewModelContractTest {
         assertTrue(vm.state.value.error!!.startsWith("Demasiados intentos"))
         assertTrue(vm.state.value.errors.isEmpty())
     }
+
+    @Test
+    fun submit_withInvalidForm_showsErrors_andDoesNotCallBackend() = runTest(dispatcher) {
+        val auth = mockk<AuthRepository>()
+        val vm = RegisterViewModel(auth)
+        vm.submit()
+        advanceUntilIdle()
+        assertTrue(vm.state.value.errors.isNotEmpty())
+        assertFalse(vm.state.value.loading)
+        coVerify(exactly = 0) { auth.signUp(any()) }
+    }
+
+    @Test
+    fun submit_success_clearsPasswordsFromState() = runTest(dispatcher) {
+        val auth = mockk<AuthRepository>()
+        coEvery { auth.signUp(any()) } returns Outcome.Success(mockk(relaxed = true))
+        val vm = RegisterViewModel(auth)
+        filled(vm)
+        vm.submit()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.loading)
+        assertEquals("", vm.state.value.password)
+        assertEquals("", vm.state.value.confirmPassword)
+        assertTrue(vm.state.value.errors.isEmpty())
+    }
 }
