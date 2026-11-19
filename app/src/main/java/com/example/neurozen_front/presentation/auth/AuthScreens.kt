@@ -78,6 +78,7 @@ import com.example.neurozen_front.presentation.components.NzTextField
 import com.example.neurozen_front.presentation.components.PasswordField
 import com.example.neurozen_front.presentation.components.PrimaryButton
 import com.example.neurozen_front.presentation.components.SuccessBanner
+import com.example.neurozen_front.presentation.theme.LocalNzDarkTheme
 import com.example.neurozen_front.presentation.theme.NzColors
 
 @Composable
@@ -109,7 +110,10 @@ fun AuthNavHost(notice: String?, onNoticeShown: () -> Unit) {
 fun WelcomeScreen(onStart: () -> Unit, onLogin: () -> Unit) {
     Box(
         Modifier.fillMaxSize().background(
-            Brush.verticalGradient(listOf(NzColors.OnboardingTop, NzColors.OnboardingMiddle, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)))
+            Brush.verticalGradient(
+                if (LocalNzDarkTheme.current) listOf(NzColors.Night, NzColors.NightSurface, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                else listOf(NzColors.OnboardingTop, NzColors.OnboardingMiddle, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+            )
         )
     ) {
         // Soft background circle
@@ -169,7 +173,7 @@ private fun AuthLayout(
     footer: @Composable ColumnScope.() -> Unit = {},
     card: @Composable ColumnScope.() -> Unit
 ) {
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(NzColors.LoginTop, NzColors.LoginBottom)))) {
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(if (LocalNzDarkTheme.current) listOf(NzColors.Night, NzColors.NightSurface) else listOf(NzColors.LoginTop, NzColors.LoginBottom)))) {
         Column(
             Modifier.fillMaxSize().systemBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -186,7 +190,7 @@ private fun AuthLayout(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp), content = card)

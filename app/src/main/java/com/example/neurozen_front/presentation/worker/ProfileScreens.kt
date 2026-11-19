@@ -35,6 +35,7 @@ import com.example.neurozen_front.presentation.components.GradientHeader
 import com.example.neurozen_front.presentation.components.HeaderStat
 import com.example.neurozen_front.presentation.components.ListRow
 import com.example.neurozen_front.presentation.components.SettingsGroup
+import com.example.neurozen_front.presentation.components.AppearanceRow
 import com.example.neurozen_front.presentation.components.GroupDivider
 import kotlinx.coroutines.flow.first
 import androidx.compose.foundation.clickable
@@ -252,6 +253,9 @@ fun ProfileScreen(onNavigate: (String) -> Unit, onLogout: () -> Unit, vm: Profil
                             GroupDivider()
                             ListRow(Icons.Outlined.Spa, "Hablar con ZenBot", "Sugerencias rápidas de bienestar", tint = Accent.Emerald) { onNavigate("zenbot") }
                         }
+                    }
+                    item {
+                        SettingsGroup("Apariencia", Modifier.padding(horizontal = 20.dp)) { AppearanceRow() }
                     }
                     item {
                         SettingsGroup("Sesión", Modifier.padding(horizontal = 20.dp)) {
