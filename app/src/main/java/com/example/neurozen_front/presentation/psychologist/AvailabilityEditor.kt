@@ -34,7 +34,7 @@ fun AvailabilityEditor(draft: AvailabilityDraft, onChange: (AvailabilityDraft) -
             DayOfWeek.entries.forEach { d ->
                 FilterChip(
                     selected = d in draft.days, onClick = { onChange(draft.toggle(d)) }, label = { Text(DateTimeUtils.dayShort(d)) },
-                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = Color.White),
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary),
                     modifier = Modifier.testTag("day_${d.name}")
                 )
             }

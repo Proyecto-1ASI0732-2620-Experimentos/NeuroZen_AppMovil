@@ -7,6 +7,8 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -91,8 +93,22 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = Mint100,
     surfaceVariant = Color(0xFF203C2F),
     onSurfaceVariant = Color(0xFFBFD5C7),
-    outline = Sage500
+    outline = Sage500,
+    outlineVariant = Color(0xFF2E4A3C),
+    tertiaryContainer = Color(0xFF24503A),
+    onTertiaryContainer = Mint100,
+    onTertiary = Forest900,
+    surfaceContainerLowest = Color(0xFF0B1A13),
+    surfaceContainerLow = Color(0xFF132A20),
+    surfaceContainer = NzColors.NightSurface,
+    surfaceContainerHigh = Color(0xFF1D392C),
+    surfaceContainerHighest = Color(0xFF244334),
+    inverseSurface = Mint100,
+    inverseOnSurface = Forest900
 )
+
+/** true cuando se pinta el tema oscuro (para los pocos fondos de marca que no salen del esquema). */
+val LocalNzDarkTheme = staticCompositionLocalOf { false }
 
 val NeuroZenTypography = Typography(
     headlineLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 36.sp),
@@ -118,13 +134,15 @@ val NeuroZenShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp)
 )
 
-/** Light by default, exactly like the original app. */
+/** Claro por defecto; [darkTheme] lo decide la preferencia de Apariencia (Sistema / Claro / Oscuro). */
 @Composable
 fun NeuroZenTheme(darkTheme: Boolean = false, content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
-        typography = NeuroZenTypography,
-        shapes = NeuroZenShapes,
-        content = content
-    )
+    CompositionLocalProvider(LocalNzDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+            typography = NeuroZenTypography,
+            shapes = NeuroZenShapes,
+            content = content
+        )
+    }
 }

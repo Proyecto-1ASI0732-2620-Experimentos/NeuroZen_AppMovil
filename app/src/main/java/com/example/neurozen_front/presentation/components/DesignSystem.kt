@@ -180,7 +180,7 @@ fun HeaderStat(value: String, label: String, modifier: Modifier = Modifier) {
 fun DateBlock(instant: Instant, highlighted: Boolean = true) {
     val date = DateTimeUtils.toLima(instant)
     val bg = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-    val fg = if (highlighted) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val fg = if (highlighted) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         Modifier.width(56.dp).clip(RoundedCornerShape(14.dp)).background(bg).padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally

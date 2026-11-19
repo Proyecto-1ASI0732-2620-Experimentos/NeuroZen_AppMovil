@@ -339,7 +339,7 @@ private fun NextAppointmentSummary(appointment: Appointment, professional: Strin
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
-                Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = Color.White)
+                Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
             }
             Column(Modifier.weight(1f)) {
                 Text("Próxima sesión", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)

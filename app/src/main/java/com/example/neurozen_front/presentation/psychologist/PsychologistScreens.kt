@@ -34,6 +34,7 @@ import com.example.neurozen_front.presentation.components.IconBadge
 import com.example.neurozen_front.presentation.components.ListRow
 import com.example.neurozen_front.presentation.components.SectionHeader
 import com.example.neurozen_front.presentation.components.SettingsGroup
+import com.example.neurozen_front.presentation.components.AppearanceRow
 import android.app.Activity
 import android.view.WindowManager
 import androidx.compose.foundation.clickable
@@ -657,6 +658,9 @@ fun ProProfileScreen(
                     GroupDivider()
                     ListRow(Icons.Outlined.Payments, "Tarifa por sesión", trailingText = profile.price?.let { "S/ ${"%.2f".format(it)}" } ?: "Sin definir", tint = Accent.Amber, showChevron = false)
                 }
+            }
+            item {
+                SettingsGroup("Apariencia", Modifier.padding(horizontal = 20.dp)) { AppearanceRow() }
             }
             item {
                 SettingsGroup("Cuenta y seguridad", Modifier.padding(horizontal = 20.dp)) {

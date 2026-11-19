@@ -221,7 +221,7 @@ private fun KindChips(all: List<LibraryResource>, selected: ResourceKind?, onSel
 
 @Composable
 private fun chipColors() = FilterChipDefaults.filterChipColors(
-    selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = Color.White, selectedLeadingIconColor = Color.White
+    selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary, selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
 )
 
 @Composable

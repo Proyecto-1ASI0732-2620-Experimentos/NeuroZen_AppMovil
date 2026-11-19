@@ -175,13 +175,13 @@ fun BreathingScreen(onBack: () -> Unit, vm: BreathingViewModel = hiltViewModel()
             }
             Text(exercise.description, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Box(Modifier.fillMaxWidth().padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.size(220.dp).scale(scale).background(NzColors.Mint.copy(alpha = 0.6f), CircleShape))
+                Box(Modifier.size(220.dp).scale(scale).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f), CircleShape))
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite; contentDescription = "$phaseLabel $secondsLeft" }
                 ) {
-                    Text(phaseLabel, style = MaterialTheme.typography.headlineSmall, color = NzColors.Forest)
-                    if (running) Text("$secondsLeft s · ciclo $cycle/${exercise.cycles}", color = NzColors.Forest)
+                    Text(phaseLabel, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    if (running) Text("$secondsLeft s · ciclo $cycle/${exercise.cycles}", color = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
             PrimaryButton(if (running) "Detener" else "Comenzar", onClick = { running = !running; if (!running) { phaseLabel = "Listo"; phaseIndex = -1 } })

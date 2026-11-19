@@ -149,3 +149,24 @@ Comando equivalente al CI: `testDebugUnitTest createDebugUnitTestCoverageReport 
 
 **No ejecutado:** no hay emulador en este entorno (sin KVM) y no se pudieron generar capturas, así que el diseño se
 revisó solo en el código. Falta recorrerlo en un teléfono real (ver §4).
+
+---
+
+## 6. Apariencia: modo claro, oscuro o según el sistema
+
+**Dónde:** Perfil → «Apariencia» → «Tema» (trabajador y psicólogo). Abre una ventana con tres opciones: «Según el
+sistema» (por defecto), «Claro» y «Oscuro». El cambio se aplica al instante en toda la app, incluidas las barras de
+estado y de navegación.
+
+| Archivo | Cambio |
+|---|---|
+| `data/settings/ThemeSettings.kt` (nuevo) | `ThemeMode` (SYSTEM, LIGHT, DARK) y `ThemeSettingsStore`, que guarda la elección en SharedPreferences propias (`neurozen_appearance`). No es un dato sensible; se conserva al cerrar sesión |
+| `presentation/components/AppearanceSetting.kt` (nuevo) | Fila «Tema» y ventana de selección con opciones de radio accesibles |
+| `MainActivity.kt` | Aplica el tema elegido y ajusta los iconos de las barras del sistema |
+| `presentation/theme/Theme.kt` | Esquema oscuro completo (contenedores, bordes y superficies) y `LocalNzDarkTheme` |
+| Pantallas y componentes | Colores fijos que no se leían en modo oscuro cambiados por colores del tema: tarjetas de inicio de sesión y registro, degradados de bienvenida e inicio de sesión, encabezados, chips seleccionados, bloque de fecha, aviso de éxito, círculo de respiración y botón con indicador de carga |
+| `sonar-project.properties` | `AppearanceSetting.kt` agregado a las exclusiones de cobertura (componente visual, mismo criterio que el resto) |
+
+**Pruebas:** `ThemeModeTest` (3 pruebas): resolución Sistema/Claro/Oscuro, valor guardado desconocido → Sistema, y la
+tienda lee y guarda la preferencia. Totales: **105/105**, lint sin advertencias nuevas, `assembleDebug` y
+`compileDebugAndroidTestKotlin` correctos. **Falta revisarlo en un teléfono**, sobre todo en modo oscuro.

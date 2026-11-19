@@ -233,7 +233,7 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
         shape = RoundedCornerShape(16.dp)
     ) {
         if (loading) {
-            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp, color = Color.White)
+            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
         } else {
             Text(text, fontWeight = FontWeight.Bold)
         }
@@ -311,8 +311,8 @@ fun ErrorBanner(text: String, modifier: Modifier = Modifier) {
 /** Original NeuroZen success box. */
 @Composable
 fun SuccessBanner(text: String, modifier: Modifier = Modifier) {
-    Surface(color = NzColors.SuccessBg, shape = RoundedCornerShape(12.dp), modifier = modifier.fillMaxWidth()) {
-        Text(text, color = NzColors.SuccessText, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(12.dp), modifier = modifier.fillMaxWidth()) {
+        Text(text, color = MaterialTheme.colorScheme.onSecondaryContainer, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
     }
 }
 
@@ -365,7 +365,7 @@ fun GradientHeader(
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
-            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(com.example.neurozen_front.presentation.theme.Forest900, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)))
+            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(com.example.neurozen_front.presentation.theme.Forest900, com.example.neurozen_front.presentation.theme.Forest700, com.example.neurozen_front.presentation.theme.Emerald600)))
             .padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 26.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
