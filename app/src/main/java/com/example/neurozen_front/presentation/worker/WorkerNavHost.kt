@@ -113,7 +113,13 @@ fun WorkerNavHost(onLogout: () -> Unit, shell: WorkerShellViewModel = hiltViewMo
                 BookingScreen(onBack = { nav.popBackStack() }, onBooked = { nav.switchTab("appointments") })
             }
             composable("appointments") { MyAppointmentsScreen(onFindProfessional = { nav.switchTab("professionals") }) }
-            composable("zenbot") { ZenBotScreen(onBack = { nav.popBackStack() }, onSuggestion = { nav.navigateSuggestion(it) }) }
+            composable("zenbot") {
+                ZenBotScreen(
+                    onBack = { nav.popBackStack() },
+                    onSuggestion = { if (it == BotSuggestion.MY_APPOINTMENTS) nav.switchTab("appointments") else nav.navigateSuggestion(it) },
+                    onOpenResource = { nav.navigate("library/$it") }
+                )
+            }
             composable("profile") { ProfileScreen(onNavigate = { nav.navigate(it) }, onLogout = onLogout) }
             composable("profile_edit") { ProfileEditScreen(isOnboarding = false, onDone = { nav.popBackStack() }, onBack = { nav.popBackStack() }) }
             composable("change_password") { ChangePasswordScreen(onBack = { nav.popBackStack() }) }
@@ -148,5 +154,6 @@ private fun NavHostController.navigateSuggestion(suggestion: BotSuggestion) = na
         BotSuggestion.PROFESSIONALS -> "professionals"
         BotSuggestion.BREAKS -> "breaks"
         BotSuggestion.LIBRARY -> "library"
+        BotSuggestion.MY_APPOINTMENTS -> "appointments"
     }
 )

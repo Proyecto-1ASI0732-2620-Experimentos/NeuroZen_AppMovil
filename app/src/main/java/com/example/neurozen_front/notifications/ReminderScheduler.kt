@@ -45,7 +45,7 @@ class ReminderScheduler @Inject constructor(@ApplicationContext private val cont
         val scheduled = mutableSetOf<Long>()
         appointments.filter { it.status == AppointmentStatus.CONFIRMED }.forEach { appointment ->
             ReminderMath.appointmentReminder(appointment.dateTime, now)?.let { at ->
-                val text = "Tu sesión es a las ${DateTimeUtils.formatTime(appointment.dateTime)}. Busca un lugar tranquilo."
+                val text = "Tu cita es a las ${DateTimeUtils.formatTime(appointment.dateTime)}. Busca un lugar tranquilo."
                 set(at, appointmentRequestCode(appointment.id), ReminderKind.APPOINTMENT, text)
                 scheduled += appointment.id
             }

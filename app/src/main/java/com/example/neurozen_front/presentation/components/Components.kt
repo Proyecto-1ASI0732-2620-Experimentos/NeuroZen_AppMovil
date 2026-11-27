@@ -17,6 +17,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import com.example.neurozen_front.R
+import com.example.neurozen_front.presentation.theme.LocalNzDarkTheme
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.CloudOff
@@ -240,15 +250,22 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
     }
 }
 
+/**
+ * Tinted tag. The text uses onSurface (contrast >= 4.5:1 on the light tint in both themes) and a dot keeps the
+ * colour cue, so the label no longer depends on low-contrast coloured text.
+ */
 @Composable
 fun Pill(text: String, color: Color, modifier: Modifier = Modifier) {
-    Box(
+    Row(
         modifier
             .clip(RoundedCornerShape(50))
             .background(color.copy(alpha = 0.15f))
-            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(text, color = color, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+        Box(Modifier.size(8.dp).clip(CircleShape).background(color))
+        Text(text, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -266,8 +283,36 @@ fun statusColor(status: AppointmentStatus): Color = when (status) {
     AppointmentStatus.CANCELLED, AppointmentStatus.UNKNOWN -> NzColors.Stone
 }
 
+/** Appointment status: dark text on a light container (>= 4.5:1), one icon per state and «Estado: …» for TalkBack. */
 @Composable
-fun StatusPill(status: AppointmentStatus) = Pill(status.label, statusColor(status))
+fun StatusPill(status: AppointmentStatus, modifier: Modifier = Modifier) {
+    val style = AppointmentStatusStyles.of(status)
+    val dark = LocalNzDarkTheme.current
+    val container = Color(if (dark) style.darkContainer else style.lightContainer)
+    val content = Color(if (dark) style.darkContent else style.lightContent)
+    val label = stringResource(style.label)
+    val description = stringResource(R.string.status_a11y, label)
+    Row(
+        modifier
+            .clip(RoundedCornerShape(50))
+            .background(container)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .clearAndSetSemantics { contentDescription = description },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(statusIcon(style.icon), contentDescription = null, tint = content, modifier = Modifier.size(14.dp))
+        Text(label, color = content, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+private fun statusIcon(icon: StatusIcon): ImageVector = when (icon) {
+    StatusIcon.CLOCK -> Icons.Outlined.Schedule
+    StatusIcon.CHECK -> Icons.Filled.Check
+    StatusIcon.CLOSE -> Icons.Filled.Close
+    StatusIcon.DONE_ALL -> Icons.Filled.DoneAll
+    StatusIcon.HELP -> Icons.AutoMirrored.Outlined.HelpOutline
+}
 
 @Composable
 fun InfoBanner(text: String, color: Color = MaterialTheme.colorScheme.secondary) {

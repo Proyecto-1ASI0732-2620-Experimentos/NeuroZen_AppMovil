@@ -16,15 +16,31 @@ object Validators {
     const val DNI_LENGTH = 8
     const val LICENSE_MAX_LENGTH = 6
     const val FULL_NAME_MAX_LENGTH = 120
-    private const val PASSWORD_MAX_BYTES = 72
+    const val PASSWORD_MIN_LENGTH = 8
+    const val PASSWORD_MAX_BYTES = 72
 
     fun isValidEmail(value: String): Boolean = EMAIL.matches(value.trim())
 
     /** At least 8 characters with letters and numbers (same as the backend's PasswordPolicy). */
     fun isStrongPassword(value: String): Boolean = passwordError(value) == null
 
+    /**
+     * Live checklist with exactly the backend PasswordPolicy: >= 8 UTF-16 chars, one Unicode letter (Char.isLetter),
+     * one Unicode digit (Char.isDigit) and at most 72 UTF-8 bytes. Nothing more, nothing less.
+     */
+    data class PasswordChecklist(val minLength: Boolean, val hasLetter: Boolean, val hasDigit: Boolean, val withinMaxBytes: Boolean) {
+        val allMet: Boolean get() = minLength && hasLetter && hasDigit && withinMaxBytes
+    }
+
+    fun passwordChecklist(value: String) = PasswordChecklist(
+        minLength = value.length >= PASSWORD_MIN_LENGTH,
+        hasLetter = value.any { it.isLetter() },
+        hasDigit = value.any { it.isDigit() },
+        withinMaxBytes = value.toByteArray(Charsets.UTF_8).size <= PASSWORD_MAX_BYTES
+    )
+
     fun passwordError(value: String): String? = when {
-        value.length < 8 -> "La contraseña debe tener al menos 8 caracteres"
+        value.length < PASSWORD_MIN_LENGTH -> "La contraseña debe tener al menos 8 caracteres"
         value.none { it.isLetter() } || value.none { it.isDigit() } -> "La contraseña debe incluir al menos una letra y un número"
         value.toByteArray(Charsets.UTF_8).size > PASSWORD_MAX_BYTES -> "La contraseña es demasiado larga"
         else -> null

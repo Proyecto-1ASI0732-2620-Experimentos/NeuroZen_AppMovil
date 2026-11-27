@@ -53,6 +53,10 @@ object DateTimeUtils {
     fun dayName(day: DayOfWeek): String =
         day.getDisplayName(TextStyle.FULL, SPANISH).replaceFirstChar { it.uppercase() }
 
+    /** "dic" for December (Spanish, no trailing dot). */
+    fun monthShort(date: LocalDate): String =
+        date.month.getDisplayName(TextStyle.SHORT, SPANISH).removeSuffix(".")
+
     fun dayShort(day: DayOfWeek): String =
         day.getDisplayName(TextStyle.SHORT, SPANISH).replaceFirstChar { it.uppercase() }.removeSuffix(".")
 }

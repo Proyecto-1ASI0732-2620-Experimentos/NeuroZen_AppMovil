@@ -76,6 +76,8 @@ import com.example.neurozen_front.presentation.components.ErrorBanner
 import com.example.neurozen_front.presentation.components.SpecialtyField
 import com.example.neurozen_front.presentation.components.NzTextField
 import com.example.neurozen_front.presentation.components.PasswordField
+import com.example.neurozen_front.presentation.components.PasswordRequirements
+import androidx.compose.ui.res.stringResource
 import com.example.neurozen_front.presentation.components.PrimaryButton
 import com.example.neurozen_front.presentation.components.SuccessBanner
 import com.example.neurozen_front.presentation.theme.LocalNzDarkTheme
@@ -334,26 +336,6 @@ private fun FormSection(title: String) {
     )
 }
 
-/** Live checklist of the backend's password rules (8+ characters, one letter and one number). */
-@Composable
-private fun PasswordRequirements(password: String) {
-    val rules = listOf(
-        "Al menos 8 caracteres" to (password.length >= 8),
-        "Una letra y un número" to (password.any { it.isLetter() } && password.any { it.isDigit() })
-    )
-    Column(Modifier.padding(start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        rules.forEach { (label, ok) ->
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(
-                    if (ok) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked, contentDescription = if (ok) "Cumplido" else "Pendiente",
-                    tint = if (ok) NzColors.Low else MaterialTheme.colorScheme.outline, modifier = Modifier.size(16.dp)
-                )
-                Text(label, style = MaterialTheme.typography.bodySmall, color = if (ok) NzColors.Low else MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
-}
-
 @Composable
 private fun CheckRow(checked: Boolean, text: String, error: String?, tag: String? = null, onChange: (Boolean) -> Unit) {
     Column {
@@ -381,30 +363,42 @@ fun ForgotPasswordScreen(onBack: () -> Unit, onHaveCode: () -> Unit, vm: Passwor
         s.success?.let { SuccessBanner(it) }
         PrimaryButton("Enviar enlace", vm::requestLink, loading = s.loading)
         TextButton(onClick = onHaveCode, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("Ya tengo el código del enlace", color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.forgot_have_link), color = MaterialTheme.colorScheme.primary)
         }
     }
 }
 
 @Composable
-fun ResetPasswordScreen(initialToken: String, onDone: () -> Unit, vm: PasswordViewModel = hiltViewModel()) {
+fun ResetPasswordScreen(initialToken: String, onDone: () -> Unit, invalidLink: Boolean = false, vm: PasswordViewModel = hiltViewModel()) {
     val s by vm.state.collectAsState()
     LaunchedEffect(initialToken) { if (initialToken.isNotBlank()) vm.update { it.copy(token = initialToken) } }
+    val fromLink = initialToken.isNotBlank()
     AuthLayout(
-        emoji = "🔑", title = "Nueva contraseña", subtitle = "Crea una contraseña segura para tu cuenta.",
-        footer = { TextButton(onClick = onDone) { Text("Cancelar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium) } }
+        emoji = "🔑", title = stringResource(R.string.reset_title), subtitle = stringResource(R.string.reset_subtitle),
+        footer = { TextButton(onClick = onDone) { Text(stringResource(R.string.reset_cancel), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium) } }
     ) {
-        if (initialToken.isBlank()) {
-            NzTextField(s.token, { v -> vm.update { it.copy(token = v) } }, "Código del enlace", supporting = "Es el valor de \"token\" en el enlace del correo.")
+        when {
+            fromLink -> SuccessBanner(stringResource(R.string.reset_link_loaded))
+            invalidLink -> ErrorBanner(stringResource(R.string.reset_link_invalid))
+            else -> Unit
         }
-        PasswordField(s.password, { v -> vm.update { it.copy(password = v) } }, "Nueva contraseña")
-        PasswordField(s.confirm, { v -> vm.update { it.copy(confirm = v) } }, "Confirmar contraseña")
+        if (!fromLink) {
+            NzTextField(
+                s.token, { v -> vm.update { it.copy(token = v.take(2048)) } }, stringResource(R.string.reset_link_field),
+                Modifier.testTag("reset_token"), supporting = stringResource(R.string.reset_link_field_hint), keyboardType = KeyboardType.Uri
+            )
+        }
+        PasswordField(s.password, { v -> vm.update { it.copy(password = v) } }, stringResource(R.string.reset_new_password))
+        PasswordRequirements(s.password)
+        PasswordField(s.confirm, { v -> vm.update { it.copy(confirm = v) } }, stringResource(R.string.reset_confirm_password))
+        s.errorRes?.let { ErrorBanner(stringResource(it)) }
         s.error?.let { ErrorBanner(it) }
-        if (s.success != null) {
-            SuccessBanner(s.success!!)
-            PrimaryButton("Ir a iniciar sesión", onDone)
+        val success = s.success
+        if (success != null) {
+            SuccessBanner(success)
+            PrimaryButton(stringResource(R.string.reset_go_login), onDone)
         } else {
-            PrimaryButton("Guardar contraseña", vm::reset, loading = s.loading)
+            PrimaryButton(stringResource(R.string.reset_save), vm::reset, loading = s.loading)
         }
     }
 }

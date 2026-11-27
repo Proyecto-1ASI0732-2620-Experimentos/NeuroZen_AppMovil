@@ -41,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.neurozen_front.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -146,7 +148,7 @@ fun MyAppointmentsScreen(onFindProfessional: () -> Unit, vm: MyAppointmentsViewM
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
-            GradientHeader("Mis Citas", "Tus sesiones con psicólogos verificados")
+            GradientHeader(stringResource(R.string.appointments_title), stringResource(R.string.appointments_subtitle))
             TabRow(selectedTabIndex = tab) {
                 Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Próximas") })
                 Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Pasadas") })
@@ -174,7 +176,7 @@ fun MyAppointmentsScreen(onFindProfessional: () -> Unit, vm: MyAppointmentsViewM
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                     if (AppointmentRules.canShareReport(a)) OutlinedButton(onClick = { dialog = AppointmentDialog.Share(a) }) { Text("Compartir informe") }
-                                    if (AppointmentRules.canReview(a)) Button(onClick = { dialog = AppointmentDialog.Review(a) }) { Text("Calificar sesión") }
+                                    if (AppointmentRules.canReview(a)) Button(onClick = { dialog = AppointmentDialog.Review(a) }) { Text(stringResource(R.string.appointments_rate)) }
                                     Spacer(Modifier.weight(1f))
                                     if (AppointmentRules.canTransition(a.status, AppointmentStatus.CANCELLED, com.example.neurozen_front.domain.model.Role.USER)) {
                                         TextButton(onClick = { dialog = AppointmentDialog.Cancel(a) }) { Text("Cancelar", color = MaterialTheme.colorScheme.error) }
@@ -230,7 +232,7 @@ private fun ReviewDialog(onDismiss: () -> Unit, onSend: (Int, String) -> Unit) {
     var comment by rememberSaveable { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Califica tu sesión") },
+        title = { Text(stringResource(R.string.appointments_rate_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row {

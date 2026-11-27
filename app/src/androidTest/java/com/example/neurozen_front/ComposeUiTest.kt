@@ -2,11 +2,18 @@ package com.example.neurozen_front
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.neurozen_front.domain.model.AppError
+import com.example.neurozen_front.domain.model.AppointmentStatus
+import com.example.neurozen_front.presentation.components.StatusPill
+import com.example.neurozen_front.domain.model.LibraryResource
+import com.example.neurozen_front.domain.model.Outcome
+import com.example.neurozen_front.domain.repository.LibraryRepository
 import com.example.neurozen_front.presentation.auth.LoginScreen
 import com.example.neurozen_front.presentation.auth.LoginUiState
 import com.example.neurozen_front.presentation.theme.NeuroZenTheme
@@ -17,6 +24,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+
+/** Library without resources (instrumented tests have no mocking library). */
+private object EmptyLibrary : LibraryRepository {
+    override suspend fun getAll(): Outcome<List<LibraryResource>> = Outcome.Success(emptyList())
+    override suspend fun getById(id: Long): Outcome<LibraryResource> = Outcome.Failure(AppError.NotFound("No encontrado"))
+    override suspend fun search(query: String, limit: Int): Outcome<List<LibraryResource>> = Outcome.Success(emptyList())
+}
 
 @RunWith(AndroidJUnit4::class)
 class ComposeUiTest {
@@ -57,10 +71,25 @@ class ComposeUiTest {
 
     @Test
     fun zenBot_crisisMessage_showsHelplines() {
-        compose.setContent { NeuroZenTheme { ZenBotScreen(onBack = {}, onSuggestion = {}, vm = ZenBotViewModel()) } }
+        // Updated: the ViewModel now needs the library (resource cards). A crisis message never queries it.
+        val vm = ZenBotViewModel(EmptyLibrary)
+        compose.setContent { NeuroZenTheme { ZenBotScreen(onBack = {}, onSuggestion = {}, vm = vm) } }
         compose.onNodeWithTag("zenbot_input").performTextInput("ya no quiero vivir")
         compose.onNodeWithTag("zenbot_send").performClick()
         compose.onNodeWithTag("crisis_message").assertIsDisplayed()
         compose.onNodeWithText("Llamar 113").assertIsDisplayed()
+    }
+
+    @Test
+    fun zenBot_showsWelcomeAndQuickOptions() {
+        val vm = ZenBotViewModel(EmptyLibrary)
+        compose.setContent { NeuroZenTheme { ZenBotScreen(onBack = {}, onSuggestion = {}, vm = vm) } }
+        compose.onNodeWithText("Ver mis citas").assertIsDisplayed()
+    }
+
+    @Test
+    fun statusPill_readsStateForTalkBack() {
+        compose.setContent { NeuroZenTheme { StatusPill(AppointmentStatus.CONFIRMED) } }
+        compose.onNodeWithContentDescription("Estado: Confirmada").assertIsDisplayed()
     }
 }

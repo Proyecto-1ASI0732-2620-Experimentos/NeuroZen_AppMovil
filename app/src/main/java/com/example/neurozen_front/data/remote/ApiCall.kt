@@ -15,19 +15,23 @@ object ErrorMapper {
     fun fromHttp(code: Int, body: String?): AppError {
         val parsed = runCatching { gson.fromJson(body, ErrorResponseDto::class.java) }.getOrNull()
         val fieldErrors = parsed?.errors.orEmpty()
-        val message = parsed?.message?.takeIf { it.isNotBlank() }
-            ?: fieldErrors.values.flatten().firstOrNull()
+        val message = parsed?.message?.takeIf(::isReadable)
+            ?: fieldErrors.values.flatten().firstOrNull(::isReadable)
         return when (code) {
             400, 422 -> AppError.Validation(message ?: "Revisa los datos ingresados.", fieldErrors)
             401 -> AppError.Unauthorized(message ?: "Correo o contraseña incorrectos.")
             403 -> AppError.Forbidden(message ?: "No tienes permiso para realizar esta acción.")
             404 -> AppError.NotFound(message ?: "No encontramos lo que buscabas.")
             409 -> AppError.Conflict(message ?: "La operación entra en conflicto con datos existentes.")
-            429 -> AppError.TooManyRequests()
+            429 -> message?.let { AppError.TooManyRequests(it) } ?: AppError.TooManyRequests()
             in 500..599 -> AppError.Server(message ?: "El servidor tuvo un problema. Inténtalo más tarde.")
             else -> AppError.Server(message ?: "Error inesperado ($code).")
         }
     }
+
+    /** Never show an empty text nor a serialized "null"/"undefined": the app's own text is used instead. */
+    private fun isReadable(text: String?): Boolean =
+        !text.isNullOrBlank() && !text.trim().equals("null", ignoreCase = true) && !text.trim().equals("undefined", ignoreCase = true)
 
     fun fromThrowable(t: Throwable): AppError = when (t) {
         is SocketTimeoutException, is InterruptedIOException -> AppError.Timeout()

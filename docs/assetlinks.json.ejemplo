@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.neurozen_front",
+      "sha256_cert_fingerprints": [
+        "REEMPLAZAR:SHA-256:DEL:CERTIFICADO:DE:RELEASE",
+        "REEMPLAZAR:SHA-256:DEL:CERTIFICADO:DE:DEBUG"
+      ]
+    }
+  }
+]

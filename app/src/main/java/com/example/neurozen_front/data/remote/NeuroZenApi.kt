@@ -45,7 +45,9 @@ interface NeuroZenApi {
     @GET("professionals/{id}") suspend fun getProfessional(@Path("id") id: Long): Response<ProfessionalDto>
     @GET("professionals/{id}/reviews") suspend fun getReviews(@Path("id") id: Long): Response<List<ReviewDto>>
     @POST("professionals/{id}/reviews") suspend fun createReview(@Path("id") id: Long, @Body body: CreateReviewDto): Response<ReviewDto>
-    @GET("professionals/{id}/available-slots") suspend fun getAvailableSlots(@Path("id") id: Long, @Query("date") date: String): Response<List<String>>
+    @GET("professionals/{id}/available-slots") suspend fun getAvailableSlots(
+        @Path("id") id: Long, @Query("date") date: String, @Query("durationMinutes") durationMinutes: Int? = null
+    ): Response<List<String>>
     @GET("professionals/me") suspend fun getMyProfessional(): Response<MyProfessionalDto>
     @PUT("professionals/me") suspend fun updateMyProfessional(@Body body: UpdateMyProfessionalDto): Response<MyProfessionalDto>
 
@@ -53,10 +55,17 @@ interface NeuroZenApi {
     @GET("appointments/types") suspend fun getAppointmentTypes(): Response<List<AppointmentTypeDto>>
     @GET("appointments") suspend fun getAppointments(@Query("patientId") patientId: Long? = null, @Query("professionalId") professionalId: Long? = null): Response<List<AppointmentDto>>
     @POST("appointments") suspend fun createAppointment(@Body body: CreateAppointmentDto): Response<AppointmentDto>
+    @GET("appointments/availability") suspend fun getAvailability(
+        @Query("professionalId") professionalId: Long, @Query("startDate") startDate: String, @Query("endDate") endDate: String,
+        @Query("durationMinutes") durationMinutes: Int? = null
+    ): Response<AvailabilityDto>
     @PATCH("appointments/{id}/status") suspend fun updateAppointmentStatus(@Path("id") id: Long, @Body body: UpdateStatusDto): Response<AppointmentDto>
 
     // Library
     @GET("resource-libraries") suspend fun getResources(): Response<List<ResourceDto>>
+    @GET("resource-libraries/search") suspend fun searchResources(
+        @Query("q") query: String, @Query("type") type: String? = null, @Query("limit") limit: Int? = null
+    ): Response<ResourceSearchDto>
     @GET("resource-libraries/{id}") suspend fun getResource(@Path("id") id: Long): Response<ResourceDto>
 
     // Subscriptions

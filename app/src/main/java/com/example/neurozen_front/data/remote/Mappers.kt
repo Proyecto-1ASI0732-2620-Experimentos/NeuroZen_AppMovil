@@ -1,11 +1,13 @@
 package com.example.neurozen_front.data.remote
 
 import com.example.neurozen_front.domain.logic.AssessmentScoring
+import com.example.neurozen_front.domain.logic.DateTimeUtils
 import com.example.neurozen_front.domain.logic.DateTimeUtils.parseInstant
 import com.example.neurozen_front.domain.logic.JwtDecoder
 import com.example.neurozen_front.domain.logic.YouTube
 import com.example.neurozen_front.domain.model.Appointment
 import com.example.neurozen_front.domain.model.AppointmentStatus
+import com.example.neurozen_front.domain.model.AvailabilityCalendar
 import com.example.neurozen_front.domain.model.AppointmentType
 import com.example.neurozen_front.domain.model.Assessment
 import com.example.neurozen_front.domain.model.AvailabilitySchedule
@@ -25,6 +27,7 @@ import com.example.neurozen_front.domain.model.Subscription
 import com.example.neurozen_front.domain.model.UserProfile
 import com.example.neurozen_front.domain.model.VerificationStatus
 import java.time.Instant
+import java.time.LocalDate
 
 fun AuthenticatedUserDto.toSession(): Session {
     val jwt = requireNotNull(token) { "El servidor no devolvió un token" }
@@ -64,7 +67,17 @@ fun HealthMetricDto.toDomain() = HealthMetric(id, stressLevel ?: 0, heartRate, s
 fun ProfessionalDto.toDomain() = Professional(
     id = id ?: 0, userId = userId ?: 0, name = name.orEmpty(), specialty = specialty.orEmpty(), bio = bio.orEmpty(),
     experienceYears = experienceYears, price = price, rating = rating ?: 0.0, reviews = reviews ?: 0,
-    availability = availability.orEmpty(), imageUrl = image?.takeIf { it.startsWith("https://") }
+    availability = availability.orEmpty(), imageUrl = image?.takeIf { it.startsWith("https://") },
+    schedule = availabilitySchedule?.toDomain()?.takeIf { it.days.isNotEmpty() }
+)
+
+private fun parseDate(value: String?): LocalDate? = value?.let { runCatching { LocalDate.parse(it.take(10)) }.getOrNull() }
+
+fun AvailabilityDto.toDomain() = AvailabilityCalendar(
+    timeZone = timeZone?.takeIf { it.isNotBlank() } ?: DateTimeUtils.LIMA.id,
+    slotMinutes = slotMinutes,
+    days = days.orEmpty().mapNotNull { d -> parseDate(d.date)?.let { it to d.slots.orEmpty().sorted() } }.toMap(),
+    nextAvailableDate = parseDate(nextAvailableDate)
 )
 
 fun ScheduleDto.toDomain() = AvailabilitySchedule(days.orEmpty(), start.orEmpty(), end.orEmpty())
@@ -80,7 +93,7 @@ fun MyProfessionalDto.toDomain() = ProfessionalProfile(
 fun ReviewDto.toDomain() = Review(id ?: 0, userName ?: "Anónimo", rating ?: 0, comment.orEmpty(), parseInstant(createdAt))
 
 fun AppointmentTypeDto.toDomain() = AppointmentType(
-    value = value ?: 1, displayName = displayName ?: name ?: "Sesión", description = description.orEmpty(),
+    value = value ?: 1, displayName = displayName ?: name ?: "Cita", description = description.orEmpty(),
     durationMinutes = estimatedDurationMinutes ?: 60
 )
 
@@ -112,5 +125,10 @@ fun ResourceDto.toDomain(): LibraryResource {
         author = author?.takeIf { it.isNotBlank() }
     )
 }
+
+fun ResourceSearchItemDto.toDomain(): LibraryResource = ResourceDto(
+    id = id, title = title, description = description, content = null, resourceType = resourceType, contentUrl = contentUrl,
+    duration = durationMinutes, thumbnail = thumbnail, tags = tags, author = author, createdAt = null
+).toDomain()
 
 fun SubscriptionDto.toDomain() = Subscription(id ?: 0, planId ?: 0, isActive ?: false, cardLast4, expirationDate)

@@ -32,6 +32,7 @@ import com.example.neurozen_front.domain.model.Appointment
 import com.example.neurozen_front.domain.model.AppointmentStatus
 import com.example.neurozen_front.domain.model.AppointmentType
 import com.example.neurozen_front.domain.model.Assessment
+import com.example.neurozen_front.domain.model.AvailabilityCalendar
 import com.example.neurozen_front.domain.model.BookingRequest
 import com.example.neurozen_front.domain.model.HealthMetric
 import com.example.neurozen_front.domain.model.LibraryResource
@@ -197,8 +198,8 @@ class ProfessionalRepositoryImpl @Inject constructor(private val api: NeuroZenAp
         return apiCall({ api.createReview(professionalId, CreateReviewDto(appointmentId, rating, comment.trim())) }) { it.toDomain() }
     }
 
-    override suspend fun getAvailableSlots(id: Long, date: LocalDate): Outcome<List<String>> =
-        apiCall({ api.getAvailableSlots(id, date.toString()) }) { it.sorted() }
+    override suspend fun getAvailableSlots(id: Long, date: LocalDate, durationMinutes: Int?): Outcome<List<String>> =
+        apiCall({ api.getAvailableSlots(id, date.toString(), durationMinutes) }) { it.sorted() }
 
     override suspend fun getMyProfile(): Outcome<ProfessionalProfile> = apiCall({ api.getMyProfessional() }) { it.toDomain() }
 
@@ -242,6 +243,11 @@ class AppointmentRepositoryImpl @Inject constructor(
         return apiCall({ api.createAppointment(body) }) { it.toDomain() }
     }
 
+    override suspend fun getAvailability(
+        professionalId: Long, startDate: LocalDate, endDate: LocalDate, durationMinutes: Int?
+    ): Outcome<AvailabilityCalendar> =
+        apiCall({ api.getAvailability(professionalId, startDate.toString(), endDate.toString(), durationMinutes) }) { it.toDomain() }
+
     override suspend fun updateStatus(id: Long, status: AppointmentStatus): Outcome<Appointment> =
         apiCall({ api.updateAppointmentStatus(id, UpdateStatusDto(status.name)) }) { it.toDomain() }
 
@@ -260,6 +266,9 @@ class AppointmentRepositoryImpl @Inject constructor(
 class LibraryRepositoryImpl @Inject constructor(private val api: NeuroZenApi) : LibraryRepository {
     override suspend fun getAll(): Outcome<List<LibraryResource>> = apiCall({ api.getResources() }) { list -> list.map { it.toDomain() } }
     override suspend fun getById(id: Long): Outcome<LibraryResource> = apiCall({ api.getResource(id) }) { it.toDomain() }
+
+    override suspend fun search(query: String, limit: Int): Outcome<List<LibraryResource>> =
+        apiCall({ api.searchResources(query.trim(), limit = limit.coerceIn(1, 10)) }) { body -> body.items.orEmpty().map { it.toDomain() } }
 }
 
 class SubscriptionRepositoryImpl @Inject constructor(

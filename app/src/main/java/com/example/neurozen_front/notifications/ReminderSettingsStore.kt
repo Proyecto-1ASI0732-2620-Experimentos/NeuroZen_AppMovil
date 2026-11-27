@@ -16,7 +16,7 @@ data class ReminderConfig(
 enum class ReminderKind(val key: String, val channelId: String, val title: String, val text: String) {
     BREAK("break", "active_breaks", "Hora de una pausa activa", "Levántate, estira cuello y hombros y respira profundo por 2 minutos."),
     ERGONOMICS("ergonomics", "ergonomics", "Revisa tu postura", "Espalda apoyada, pantalla a la altura de los ojos y pies en el piso."),
-    APPOINTMENT("appointment", "appointments", "Tu sesión es en 1 hora", "Prepárate para tu cita con tu psicólogo en NeuroZen.")
+    APPOINTMENT("appointment", "appointments", "Tu cita es en 1 hora", "Prepárate para tu cita con tu psicólogo en NeuroZen.")
 }
 
 class ReminderSettingsStore(context: Context) {

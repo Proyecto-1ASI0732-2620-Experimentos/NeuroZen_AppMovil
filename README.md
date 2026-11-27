@@ -40,7 +40,7 @@ Propiedades opcionales en `gradle.properties` o con `-P`:
 | Propiedad | Por defecto | Uso |
 |---|---|---|
 | `neurozen.apiBaseUrl` | `https://neurozen-backend-mobile.onrender.com/api/v1/` | URL base de la API (debe terminar en `/`) |
-| `neurozen.resetLinkHost` | `neurozen-web.onrender.com` | Dominio del enlace de recuperación de contraseña que envía el correo. **Cámbialo al dominio real de la web** y publica `/.well-known/assetlinks.json` para que el App Link se verifique |
+| `neurozen.resetLinkHost` | `neurozen-web-frontend.vercel.app` | Dominio del enlace de recuperación de contraseña que envía el correo (`https://<host>/reset-password?token=…`). La web debe publicar `/.well-known/assetlinks.json` (ver `docs/INFORME_MEJORAS_APP_MOVIL.md`) para que el App Link se verifique |
 
 Para un backend local usa un túnel HTTPS (por ejemplo ngrok): la app solo permite HTTPS.
 

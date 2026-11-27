@@ -1,5 +1,9 @@
 package com.example.neurozen_front.presentation.worker
 
+import androidx.compose.ui.res.stringResource
+import com.example.neurozen_front.R
+import com.example.neurozen_front.domain.logic.StressScale
+import com.example.neurozen_front.presentation.components.UiMappings
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.FamilyRestroom
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -148,13 +152,23 @@ fun TriggersScreen(onBack: () -> Unit, vm: TriggersViewModel = hiltViewModel()) 
                         }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Nivel: ${form.level}/10", modifier = Modifier.weight(1f))
-                        Pill(StressLevel.fromTriggerLevel(form.level).label, stressColor(StressLevel.fromTriggerLevel(form.level)))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                stringResource(R.string.stress_index_value, StressScale.fromTrigger(form.level) ?: 0),
+                                style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold
+                            )
+                            Text(stringResource(R.string.stress_detail_trigger, form.level), style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        val formLevel = StressLevel.fromTriggerLevel(form.level)
+                        Pill(stringResource(UiMappings.stressLevelLabel(formLevel)), stressColor(formLevel))
                     }
                     Slider(
                         value = form.level.toFloat(), onValueChange = { v -> vm.updateForm { it.copy(level = v.toInt()) } },
                         valueRange = 1f..10f, steps = 8
                     )
+                    Text(stringResource(R.string.triggers_perception_note), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                     NzTextField(form.description, { v -> vm.updateForm { it.copy(description = v.take(500)) } }, "Descripción (opcional)", singleLine = false, minLines = 2)
                     PrimaryButton("Guardar registro", vm::save, loading = form.saving)
                 }
@@ -171,8 +185,13 @@ fun TriggersScreen(onBack: () -> Unit, vm: TriggersViewModel = hiltViewModel()) 
                             Column(Modifier.weight(1f)) {
                                 Text(Catalogs.categoryLabel(t.category), fontWeight = FontWeight.SemiBold)
                                 Text(DateTimeUtils.formatDateTime(t.triggeredAt), style = MaterialTheme.typography.bodySmall)
+                                Text(stringResource(R.string.stress_detail_trigger, t.stressLevel), style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Pill("${t.stressLevel}/10", stressColor(StressLevel.fromTriggerLevel(t.stressLevel)))
+                            Pill(
+                                StressScale.fromTrigger(t.stressLevel)?.let { stringResource(R.string.stress_index_value, it) } ?: stringResource(R.string.stress_index_unknown),
+                                stressColor(StressLevel.fromTriggerLevel(t.stressLevel))
+                            )
                             IconButton(onClick = { toDelete = t }) { Icon(Icons.Outlined.Delete, contentDescription = "Eliminar registro") }
                         }
                         if (t.description.isNotBlank()) Text(t.description, style = MaterialTheme.typography.bodyMedium)
@@ -252,8 +271,19 @@ fun AssessmentScreen(onBack: () -> Unit, onAction: (RecommendationAction) -> Uni
                         items(list, key = { it.id }) { a ->
                             SectionCard {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(DateTimeUtils.formatDateTime(a.completedAt), modifier = Modifier.weight(1f))
-                                    Pill("${a.score}/40 · ${a.level.label}", stressColor(a.level))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(DateTimeUtils.formatDateTime(a.completedAt))
+                                        Text(stringResource(R.string.stress_detail_pss, a.score), style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Pill(
+                                        stringResource(
+                                            R.string.assessment_history_pill,
+                                            StressScale.fromPss(a.score)?.let { stringResource(R.string.stress_index_value, it) } ?: stringResource(R.string.stress_index_unknown),
+                                            stringResource(UiMappings.stressLevelLabel(a.level))
+                                        ),
+                                        stressColor(a.level)
+                                    )
                                 }
                             }
                         }
@@ -300,8 +330,13 @@ private fun AssessmentResult(result: Assessment, onAction: (RecommendationAction
         item {
             SectionCard {
                 Text("Tu resultado", style = MaterialTheme.typography.titleMedium)
-                Text("${result.score} / 40", style = MaterialTheme.typography.headlineMedium, color = stressColor(result.level))
-                Pill("Estrés ${result.level.label.lowercase()}", stressColor(result.level))
+                Text(
+                    StressScale.fromPss(result.score)?.let { stringResource(R.string.stress_index_value, it) } ?: stringResource(R.string.stress_index_unknown),
+                    style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(stringResource(R.string.stress_detail_pss, result.score), style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Pill(stringResource(R.string.assessment_result_level, stringResource(UiMappings.stressLevelLabel(result.level)).lowercase()), stressColor(result.level))
                 Text(
                     when (result.level) {
                         StressLevel.LOW -> "Manejas bien la presión. Sigue cuidando tus pausas y tu descanso."
@@ -309,6 +344,8 @@ private fun AssessmentResult(result: Assessment, onAction: (RecommendationAction
                         StressLevel.HIGH -> "Tu nivel de estrés es alto. Te recomendamos conversar con un psicólogo."
                     }
                 )
+                Text(stringResource(R.string.stress_scale_disclaimer), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         itemsIndexed(recs) { _, rec ->

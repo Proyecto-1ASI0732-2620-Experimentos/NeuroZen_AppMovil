@@ -72,7 +72,9 @@ data class CreateHealthMetricDto(val stressLevel: Int, val heartRate: Int?, val 
 data class ProfessionalDto(
     val id: Long?, val userId: Long?, val name: String?, val specialty: String?, val bio: String?,
     val experienceYears: Int?, val price: Double?, val rating: Double?, val reviews: Int?,
-    val availability: String?, val image: String?, val verificationStatus: String?
+    val availability: String?, val image: String?, val verificationStatus: String?,
+    /** { days: ["monday", …], start: "HH:mm", end: "HH:mm" } in Lima time, or null. */
+    val availabilitySchedule: ScheduleDto? = null
 )
 
 data class ScheduleDto(val days: List<String>?, val start: String?, val end: String?)
@@ -105,6 +107,14 @@ data class CreateAppointmentDto(
 
 data class UpdateStatusDto(val status: String)
 
+/** GET /appointments/availability: free slots per day (Lima time) for up to 92 days. */
+data class AvailabilityDto(
+    val professionalId: Long?, val timeZone: String?, val slotMinutes: Int?,
+    val days: List<AvailabilityDayDto>?, val nextAvailableDate: String?
+)
+
+data class AvailabilityDayDto(val date: String?, val slots: List<String>?)
+
 data class LastAssessmentDto(val score: Int?, val level: String? = null, val completedAt: String?)
 
 data class ReportDto(
@@ -122,6 +132,14 @@ data class CreateReportDto(
 data class ResourceDto(
     val id: Long?, val title: String?, val description: String?, val content: String?, val resourceType: String?,
     val contentUrl: String?, val duration: Int?, val thumbnail: String?, val tags: List<String>?, val author: String?, val createdAt: String?
+)
+
+/** GET /resource-libraries/search: { items: [...] } (respects the plan). Here the duration is called durationMinutes. */
+data class ResourceSearchDto(val items: List<ResourceSearchItemDto>?)
+
+data class ResourceSearchItemDto(
+    val id: Long?, val title: String?, val description: String?, val resourceType: String?, val contentUrl: String?,
+    val durationMinutes: Int?, val thumbnail: String?, val tags: List<String>?, val author: String?, val score: Double?
 )
 
 data class SubscriptionDto(

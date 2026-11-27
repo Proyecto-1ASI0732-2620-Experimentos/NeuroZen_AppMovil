@@ -43,9 +43,9 @@ object Catalogs {
      * "Este recurso está disponible desde el plan Avanzado") and the web shows.
      */
     val PLANS = listOf(
-        SubscriptionPlan(1, "Básico", 0.0, listOf("Registro de estrés", "Test de autoevaluación", "Parte de la biblioteca (videos y audios)")),
-        SubscriptionPlan(2, "Avanzado", 29.90, listOf("Todo lo del plan Básico", "Biblioteca completa", "Informes para tu psicólogo")),
-        SubscriptionPlan(3, "Profesional", 99.90, listOf("Todo lo del plan Avanzado", "Contenido exclusivo de la biblioteca", "Soporte prioritario"))
+        SubscriptionPlan(1, "Básico", listOf("Registro de estrés", "Test de autoevaluación", "Parte de la biblioteca (videos y audios)")),
+        SubscriptionPlan(2, "Avanzado", listOf("Todo lo del plan Básico", "Biblioteca completa", "Informes para tu psicólogo")),
+        SubscriptionPlan(3, "Profesional", listOf("Todo lo del plan Avanzado", "Contenido exclusivo de la biblioteca", "Soporte prioritario"))
     )
 
     fun planName(planId: Int?): String = PLANS.firstOrNull { it.id == planId }?.name ?: "Básico"
@@ -75,15 +75,19 @@ object Catalogs {
     /** Backend values (UserProfileRules.AgeRanges). */
     val AGE_RANGES = listOf("18-24", "25-34", "35-44", "45-54", "55+")
 
-    data class BreathingExercise(val id: String, val name: String, val description: String, val phases: List<Pair<String, Int>>, val cycles: Int)
+    data class BreathingExercise(val id: String, val name: String, val description: String, val phases: List<BreathPhase>, val cycles: Int)
+
+    private fun inhale(seconds: Int) = BreathPhase(BreathPhaseKind.INHALE, seconds)
+    private fun hold(seconds: Int) = BreathPhase(BreathPhaseKind.HOLD, seconds)
+    private fun exhale(seconds: Int) = BreathPhase(BreathPhaseKind.EXHALE, seconds)
 
     val BREATHING_EXERCISES = listOf(
         BreathingExercise("box", "Respiración cuadrada", "Equilibra y enfoca. Ideal antes de una reunión.",
-            listOf("Inhala" to 4, "Sostén" to 4, "Exhala" to 4, "Sostén" to 4), 4),
+            listOf(inhale(4), hold(4), exhale(4), hold(4)), 4),
         BreathingExercise("478", "Respiración 4-7-8", "Relaja el sistema nervioso. Útil para dormir.",
-            listOf("Inhala" to 4, "Sostén" to 7, "Exhala" to 8), 4),
+            listOf(inhale(4), hold(7), exhale(8)), 4),
         BreathingExercise("coherent", "Respiración coherente", "5 respiraciones por minuto para bajar la tensión.",
-            listOf("Inhala" to 6, "Exhala" to 6), 5)
+            listOf(inhale(6), exhale(6)), 5)
     )
 
     data class Challenge(val id: String, val title: String, val description: String, val days: Int)

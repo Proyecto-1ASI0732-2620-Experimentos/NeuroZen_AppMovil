@@ -9,7 +9,7 @@ plugins {
 val apiBaseUrl: String = (project.findProperty("neurozen.apiBaseUrl") as String?)
     ?: "https://neurozen-backend-mobile.onrender.com/api/v1/"
 val resetLinkHost: String = (project.findProperty("neurozen.resetLinkHost") as String?)
-    ?: "neurozen-web.onrender.com"
+    ?: "neurozen-web-frontend.vercel.app"
 
 android {
     namespace = "com.example.neurozen_front"
@@ -30,6 +30,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         manifestPlaceholders["resetLinkHost"] = resetLinkHost
+        buildConfigField("String", "RESET_LINK_HOST", "\"$resetLinkHost\"")
     }
 
     // Release signing only when the CI (or you, locally) exports the keystore variables.

@@ -41,7 +41,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import coil3.compose.AsyncImage
+import com.example.neurozen_front.R
 import com.example.neurozen_front.domain.logic.DateTimeUtils
 import com.example.neurozen_front.presentation.theme.Emerald600
 import com.example.neurozen_front.presentation.theme.Forest700
@@ -65,7 +67,7 @@ fun Avatar(name: String, size: Int = 56, imageUrl: String? = null, ring: Boolean
     val ringModifier = if (ring) Modifier.border(3.dp, Color.White, CircleShape) else Modifier
     if (imageUrl != null) {
         AsyncImage(
-            model = imageUrl, contentDescription = "Foto de $name", contentScale = ContentScale.Crop,
+            model = imageUrl, contentDescription = stringResource(R.string.avatar_photo, name), contentScale = ContentScale.Crop,
             modifier = Modifier.size(size.dp).clip(CircleShape).then(ringModifier)
         )
     } else {
