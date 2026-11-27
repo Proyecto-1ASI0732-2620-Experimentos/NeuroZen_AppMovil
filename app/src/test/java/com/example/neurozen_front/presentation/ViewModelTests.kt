@@ -104,12 +104,16 @@ class ViewModelTests {
 
     @Test
     fun zenBot_crisisMessageIsFlagged() {
-        val vm = ZenBotViewModel()
+        // Updated: ZenBotViewModel now receives the library (resource recommendations). A crisis never searches it.
+        val library = mockk<com.example.neurozen_front.domain.repository.LibraryRepository>()
+        val vm = ZenBotViewModel(library)
         vm.onInput("no quiero vivir más")
         vm.send()
         val last = vm.ui.value.messages.last()
         assertTrue(last.isCrisis)
         assertEquals("", vm.ui.value.input)
+        assertFalse(vm.ui.value.typing)
+        coVerify(exactly = 0) { library.search(any(), any()) }
     }
 
     // ----- Share report use case -----

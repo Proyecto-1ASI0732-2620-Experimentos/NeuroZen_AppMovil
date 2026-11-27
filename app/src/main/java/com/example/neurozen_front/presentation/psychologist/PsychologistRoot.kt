@@ -2,6 +2,7 @@ package com.example.neurozen_front.presentation.psychologist
 
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.testTag
+import com.example.neurozen_front.R
 import com.example.neurozen_front.domain.logic.AvailabilityDraft
 import android.Manifest
 import android.os.Build
@@ -45,6 +46,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -228,7 +230,7 @@ private fun VerificationStatusScreen(profile: ProfessionalProfile, vm: Psycholog
             }
             else -> {
                 InfoBanner("Estamos verificando tu colegiatura N.° ${profile.licenseNumber} en el portal del Colegio de Psicólogos del Perú. Mientras tanto no aparecerás en el directorio ni podrás recibir citas.")
-                Text("Suele tomar 1 a 2 días hábiles. Vuelve a abrir la app para ver el resultado.")
+                Text(stringResource(R.string.verification_time_notice))
                 OutlinedButton(onClick = { vm.load() }) { Text("Actualizar estado") }
             }
         }

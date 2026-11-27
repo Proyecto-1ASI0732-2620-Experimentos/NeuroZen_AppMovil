@@ -68,7 +68,7 @@ class ShareReportUseCase @Inject constructor(
 class BookAppointmentUseCase @Inject constructor(private val appointments: AppointmentRepository) {
     suspend operator fun invoke(request: BookingRequest): Outcome<Appointment> {
         if (request.slot.isBlank()) return Outcome.Failure(AppError.Validation("Elige un horario."))
-        if (request.type !in 1..3) return Outcome.Failure(AppError.Validation("Elige el tipo de sesión."))
+        if (request.type !in 1..3) return Outcome.Failure(AppError.Validation("Elige el tipo de cita."))
         if ((request.notes?.length ?: 0) > 500) return Outcome.Failure(AppError.Validation("La nota no puede superar 500 caracteres."))
         return appointments.book(request)
     }

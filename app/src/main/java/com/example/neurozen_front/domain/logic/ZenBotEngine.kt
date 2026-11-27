@@ -2,7 +2,7 @@ package com.example.neurozen_front.domain.logic
 
 data class BotReply(val text: String, val isCrisis: Boolean = false, val suggestion: BotSuggestion? = null)
 
-enum class BotSuggestion { BREATHING, TRIGGERS, ASSESSMENT, PROFESSIONALS, BREAKS, LIBRARY }
+enum class BotSuggestion { BREATHING, TRIGGERS, ASSESSMENT, PROFESSIONALS, BREAKS, LIBRARY, MY_APPOINTMENTS }
 
 /** Rule-based assistant for the worker app. Crisis detection always wins over any other rule. */
 object ZenBotEngine {
@@ -36,13 +36,29 @@ object ZenBotEngine {
             "El test de autoevaluación tiene 10 preguntas y toma unos 3 minutos. Te dará tu nivel de estrés actual.",
             suggestion = BotSuggestion.ASSESSMENT
         )),
+        Rule(listOf("mis citas", "mi cita", "proxima cita", "cancelar la cita"), BotReply(
+            "En Mis citas ves tus citas próximas y pasadas, su estado y puedes cancelarlas. Yo no reservo ni cancelo nada por ti.",
+            suggestion = BotSuggestion.MY_APPOINTMENTS
+        )),
         Rule(listOf("psicolog", "terapia", "profesional", "cita", "ayuda profesional"), BotReply(
-            "Puedes reservar una sesión con un psicólogo verificado por el CPsP desde la pestaña Profesionales.",
+            "Puedes reservar una cita con un psicólogo verificado por el CPsP desde la pestaña Profesionales.",
             suggestion = BotSuggestion.PROFESSIONALS
         )),
         Rule(listOf("pausa", "estir", "espalda", "cuello", "postura"), BotReply(
             "Una pausa activa de 2-3 minutos cada hora reduce la tensión muscular. Puedes programar recordatorios en Bienestar > Pausas activas.",
             suggestion = BotSuggestion.BREAKS
+        )),
+        Rule(listOf("registr", "anotar", "como me siento"), BotReply(
+            "Anotar cómo te sientes te ayuda a ver patrones. Elige la categoría y el nivel; la descripción es opcional.",
+            suggestion = BotSuggestion.TRIGGERS
+        )),
+        Rule(listOf("video", "recurso", "recomien", "meditac", "audio"), BotReply(
+            "Te busco algo en la biblioteca de tu plan.",
+            suggestion = BotSuggestion.LIBRARY
+        )),
+        Rule(listOf("estres", "agobi", "abrum", "tension"), BotReply(
+            "Gracias por contármelo. Una respiración lenta ayuda a bajar la tensión en pocos minutos; también puedes registrar este momento.",
+            suggestion = BotSuggestion.BREATHING
         )),
         Rule(listOf("gracias"), BotReply("¡Con gusto! Cuídate mucho. Aquí estaré si me necesitas.")),
         Rule(listOf("hola", "buenas", "buenos dias", "buenas tardes"), BotReply("¡Hola! ¿Qué te gustaría trabajar hoy: respiración, pausas o registrar tu estrés?"))

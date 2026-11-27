@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Haptic cues of the guided breathing (normal permission, granted at install). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- HTTPS only (networkSecurityConfig + usesCleartextTraffic=false). Backups disabled: health data. -->
     <application

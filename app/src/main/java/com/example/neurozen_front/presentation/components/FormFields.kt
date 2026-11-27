@@ -1,6 +1,20 @@
 package com.example.neurozen_front.presentation.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import com.example.neurozen_front.R
+import com.example.neurozen_front.presentation.theme.NzColors
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -87,5 +101,35 @@ fun SpecialtyField(selected: String, onSelect: (String) -> Unit, modifier: Modif
                 DropdownMenuItem(text = { Text(s.label) }, onClick = { onSelect(s.key); expanded = false })
             }
         }
+    }
+}
+
+/** Live checklist with exactly the backend password policy (see [Validators.passwordChecklist]). */
+@Composable
+fun PasswordRequirements(password: String, modifier: Modifier = Modifier) {
+    val check = Validators.passwordChecklist(password)
+    Column(modifier.padding(start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        PasswordRule(R.string.password_rule_length, check.minLength)
+        PasswordRule(R.string.password_rule_letter, check.hasLetter)
+        PasswordRule(R.string.password_rule_digit, check.hasDigit)
+        PasswordRule(R.string.password_rule_max_bytes, check.withinMaxBytes)
+    }
+}
+
+@Composable
+private fun PasswordRule(@StringRes label: Int, ok: Boolean) {
+    val text = stringResource(label)
+    val state = stringResource(if (ok) R.string.password_rule_met else R.string.password_rule_pending)
+    val description = stringResource(R.string.password_rule_a11y, text, state)
+    Row(
+        Modifier.clearAndSetSemantics { contentDescription = description },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            if (ok) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked, contentDescription = null,
+            tint = if (ok) NzColors.Low else MaterialTheme.colorScheme.outline, modifier = Modifier.size(16.dp)
+        )
+        Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

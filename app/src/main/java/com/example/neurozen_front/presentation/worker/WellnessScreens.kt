@@ -1,5 +1,26 @@
 package com.example.neurozen_front.presentation.worker
 
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.heading
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import com.example.neurozen_front.R
+import com.example.neurozen_front.data.feedback.AndroidFeedbackOutput
+import com.example.neurozen_front.data.settings.BreathingFeedbackSettingsStore
+import com.example.neurozen_front.domain.logic.BreathPhaseKind
+import com.example.neurozen_front.domain.logic.BreathingFeedbackController
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Air
 import androidx.compose.material.icons.outlined.EditNote
@@ -128,49 +149,87 @@ fun WellnessHubScreen(onNavigate: (String) -> Unit) {
 // ---------- Guided breathing (US08), stored locally in Room ----------
 
 @HiltViewModel
-class BreathingViewModel @Inject constructor(private val wellness: WellnessRepository) : ViewModel() {
+class BreathingViewModel @Inject constructor(
+    private val wellness: WellnessRepository,
+    private val feedbackSettings: BreathingFeedbackSettingsStore
+) : ViewModel() {
     val sessions = wellness.observeBreathingSessions().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val feedback = feedbackSettings.preferences
     fun complete(exerciseId: String, seconds: Int) = viewModelScope.launch { wellness.addBreathingSession(exerciseId, seconds) }
+    fun setVibration(enabled: Boolean) = feedbackSettings.setVibration(enabled)
+    fun setSound(enabled: Boolean) = feedbackSettings.setSound(enabled)
+}
+
+@StringRes
+private fun phaseLabel(kind: BreathPhaseKind): Int = when (kind) {
+    BreathPhaseKind.INHALE -> R.string.breathing_phase_inhale
+    BreathPhaseKind.HOLD -> R.string.breathing_phase_hold
+    BreathPhaseKind.EXHALE -> R.string.breathing_phase_exhale
 }
 
 @Composable
 fun BreathingScreen(onBack: () -> Unit, vm: BreathingViewModel = hiltViewModel()) {
     val history by vm.sessions.collectAsState()
+    val prefs by vm.feedback.collectAsState()
     var selected by rememberSaveable { mutableStateOf(Catalogs.BREATHING_EXERCISES.first().id) }
     var running by remember { mutableStateOf(false) }
-    var phaseLabel by remember { mutableStateOf("Listo") }
+    var finished by remember { mutableStateOf(false) }
     var phaseIndex by remember { mutableIntStateOf(-1) }
     var secondsLeft by remember { mutableIntStateOf(0) }
     var cycle by remember { mutableIntStateOf(0) }
     val exercise = Catalogs.BREATHING_EXERCISES.first { it.id == selected }
+    val phase = exercise.phases.getOrNull(phaseIndex)
+
+    // Haptic/sound cues: pure policy + Android output. Released on stop, pause, finish and when leaving the screen.
+    val context = LocalContext.current
+    val currentPrefs by rememberUpdatedState(prefs)
+    val feedback = remember { BreathingFeedbackController(AndroidFeedbackOutput(context)) { currentPrefs } }
+    DisposableEffect(feedback) { onDispose { feedback.stop() } }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { running = false; phaseIndex = -1; feedback.stop() }
 
     LaunchedEffect(running, selected) {
         if (!running) return@LaunchedEffect
-        val total = exercise.phases.sumOf { it.second } * exercise.cycles
-        for (c in 1..exercise.cycles) {
-            cycle = c
-            exercise.phases.forEachIndexed { i, (label, seconds) ->
-                phaseIndex = i; phaseLabel = label
-                for (s in seconds downTo 1) { secondsLeft = s; delay(1_000) }
+        finished = false
+        val total = exercise.phases.sumOf { it.seconds } * exercise.cycles
+        try {
+            for (c in 1..exercise.cycles) {
+                cycle = c
+                exercise.phases.forEachIndexed { i, p ->
+                    phaseIndex = i
+                    feedback.onPhase(p.kind)
+                    for (s in p.seconds downTo 1) { secondsLeft = s; delay(1_000) }
+                }
             }
+            vm.complete(exercise.id, total)
+            finished = true
+            running = false
+            phaseIndex = -1
+        } finally {
+            // Also runs when the effect is cancelled (Detener, pause or leaving the screen): no cue keeps playing.
+            feedback.stop()
         }
-        vm.complete(exercise.id, total)
-        running = false; phaseLabel = "¡Bien hecho!"; phaseIndex = -1
     }
 
+    val previous = exercise.phases.getOrNull(phaseIndex - 1)?.kind
     val target = when {
-        !running -> 0.6f
-        phaseLabel == "Inhala" -> 1f
-        phaseLabel == "Exhala" -> 0.5f
-        else -> if (phaseIndex > 0 && exercise.phases.getOrNull(phaseIndex - 1)?.first == "Inhala") 1f else 0.5f
+        !running || phase == null -> 0.6f
+        phase.kind == BreathPhaseKind.INHALE -> 1f
+        phase.kind == BreathPhaseKind.EXHALE -> 0.5f
+        else -> if (previous == BreathPhaseKind.INHALE) 1f else 0.5f
     }
-    val scale by animateFloatAsState(target, tween(durationMillis = (exercise.phases.getOrNull(phaseIndex)?.second ?: 1) * 1000), label = "breath")
+    val scale by animateFloatAsState(target, tween(durationMillis = (phase?.seconds ?: 1) * 1000), label = "breath")
+    val label = when {
+        running && phase != null -> stringResource(phaseLabel(phase.kind))
+        finished -> stringResource(R.string.breathing_done)
+        else -> stringResource(R.string.breathing_ready)
+    }
+    val a11yLabel = if (running && phase != null) pluralStringResource(R.plurals.breathing_phase_a11y, secondsLeft, label, secondsLeft) else label
 
-    Scaffold(topBar = { NzTopBar("Respiración guiada", onBack) }) { padding ->
+    Scaffold(topBar = { NzTopBar(stringResource(R.string.breathing_title), onBack) }) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(Catalogs.BREATHING_EXERCISES) { e ->
-                    FilterChip(selected = selected == e.id, enabled = !running, onClick = { selected = e.id }, label = { Text(e.name) })
+                    FilterChip(selected = selected == e.id, enabled = !running, onClick = { selected = e.id; finished = false }, label = { Text(e.name) })
                 }
             }
             Text(exercise.description, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -178,19 +237,50 @@ fun BreathingScreen(onBack: () -> Unit, vm: BreathingViewModel = hiltViewModel()
                 Box(Modifier.size(220.dp).scale(scale).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f), CircleShape))
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite; contentDescription = "$phaseLabel $secondsLeft" }
+                    modifier = Modifier.clearAndSetSemantics { liveRegion = LiveRegionMode.Polite; contentDescription = a11yLabel }
                 ) {
-                    Text(phaseLabel, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    if (running) Text("$secondsLeft s · ciclo $cycle/${exercise.cycles}", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(label, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    if (running) {
+                        Text(stringResource(R.string.breathing_progress, secondsLeft, cycle, exercise.cycles), color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
                 }
             }
-            PrimaryButton(if (running) "Detener" else "Comenzar", onClick = { running = !running; if (!running) { phaseLabel = "Listo"; phaseIndex = -1 } })
-            Text("Tus sesiones (${history.size})", style = MaterialTheme.typography.titleMedium)
+            PrimaryButton(
+                stringResource(if (running) R.string.breathing_stop else R.string.breathing_start),
+                onClick = { running = !running; if (!running) { phaseIndex = -1; feedback.stop() } }
+            )
+            SectionCard {
+                Text(stringResource(R.string.breathing_feedback_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+                FeedbackSwitch(Icons.Outlined.Vibration, R.string.breathing_vibration, R.string.breathing_vibration_detail, prefs.vibration, vm::setVibration)
+                FeedbackSwitch(Icons.AutoMirrored.Outlined.VolumeUp, R.string.breathing_sound, R.string.breathing_sound_detail, prefs.sound, vm::setSound)
+                Text(stringResource(R.string.breathing_feedback_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(stringResource(R.string.breathing_history, history.size), style = MaterialTheme.typography.titleMedium)
             history.take(10).forEach { s ->
                 val name = Catalogs.BREATHING_EXERCISES.firstOrNull { it.id == s.exerciseId }?.name ?: s.exerciseId
-                Text("• $name · ${s.durationSeconds / 60} min ${s.durationSeconds % 60} s · ${DateTimeUtils.formatDateTime(s.completedAt)}", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    stringResource(R.string.breathing_history_item, name, s.durationSeconds / 60, s.durationSeconds % 60, DateTimeUtils.formatDateTime(s.completedAt)),
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
+    }
+}
+
+/** Whole row is the touch target (>= 48 dp); TalkBack reads «Vibración, interruptor, activado». */
+@Composable
+private fun FeedbackSwitch(icon: ImageVector, @StringRes title: Int, @StringRes detail: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(title), style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(detail), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

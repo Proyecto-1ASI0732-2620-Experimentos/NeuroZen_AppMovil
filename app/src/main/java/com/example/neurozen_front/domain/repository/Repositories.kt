@@ -4,6 +4,7 @@ import com.example.neurozen_front.domain.model.Appointment
 import com.example.neurozen_front.domain.model.AppointmentStatus
 import com.example.neurozen_front.domain.model.AppointmentType
 import com.example.neurozen_front.domain.model.Assessment
+import com.example.neurozen_front.domain.model.AvailabilityCalendar
 import com.example.neurozen_front.domain.model.BookingRequest
 import com.example.neurozen_front.domain.model.BreathingSession
 import com.example.neurozen_front.domain.model.ChallengeProgress
@@ -80,7 +81,7 @@ interface ProfessionalRepository {
     suspend fun getById(id: Long): Outcome<Professional>
     suspend fun getReviews(id: Long): Outcome<List<Review>>
     suspend fun addReview(professionalId: Long, appointmentId: Long, rating: Int, comment: String): Outcome<Review>
-    suspend fun getAvailableSlots(id: Long, date: LocalDate): Outcome<List<String>>
+    suspend fun getAvailableSlots(id: Long, date: LocalDate, durationMinutes: Int? = null): Outcome<List<String>>
     suspend fun getMyProfile(): Outcome<ProfessionalProfile>
     suspend fun updateMyProfile(data: UpdateProfessionalData): Outcome<ProfessionalProfile>
 }
@@ -90,6 +91,9 @@ interface AppointmentRepository {
     suspend fun getMine(): Outcome<List<Appointment>>
     suspend fun getForProfessional(professionalId: Long): Outcome<List<Appointment>>
     suspend fun book(request: BookingRequest): Outcome<Appointment>
+
+    /** GET /appointments/availability (max. 92 days, Lima time). */
+    suspend fun getAvailability(professionalId: Long, startDate: LocalDate, endDate: LocalDate, durationMinutes: Int?): Outcome<AvailabilityCalendar>
     suspend fun updateStatus(id: Long, status: AppointmentStatus): Outcome<Appointment>
     fun observeCached(): Flow<List<Appointment>>
 }
@@ -97,6 +101,9 @@ interface AppointmentRepository {
 interface LibraryRepository {
     suspend fun getAll(): Outcome<List<LibraryResource>>
     suspend fun getById(id: Long): Outcome<LibraryResource>
+
+    /** GET /resource-libraries/search (max. 10, filtered by plan). */
+    suspend fun search(query: String, limit: Int): Outcome<List<LibraryResource>>
 }
 
 interface SubscriptionRepository {

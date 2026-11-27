@@ -43,6 +43,8 @@ object NzColors {
     val Low = Color(0xFF2E7D32)
     val Moderate = Color(0xFFE0A030)
     val High = Color(0xFFC62828)
+    /** Star characters on light surfaces (contrast >= 4.5:1 on white; Moderate is too light for text). */
+    val StarText = Color(0xFF8A5A00)
 
     // Original auth / onboarding gradients
     val LoginTop = Color(0xFFF1F8E9)

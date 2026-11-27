@@ -120,7 +120,9 @@ data class Professional(
     val rating: Double,
     val reviews: Int,
     val availability: String,
-    val imageUrl: String?
+    val imageUrl: String?,
+    /** Weekly schedule (Lima time); used as fallback when GET /appointments/availability fails. */
+    val schedule: AvailabilitySchedule? = null
 )
 
 data class Review(
@@ -213,6 +215,14 @@ data class Appointment(
     val reviewed: Boolean
 )
 
+/** Free slots per day in Lima time, from GET /appointments/availability. */
+data class AvailabilityCalendar(
+    val timeZone: String,
+    val slotMinutes: Int?,
+    val days: Map<LocalDate, List<String>>,
+    val nextAvailableDate: LocalDate?
+)
+
 data class BookingRequest(
     val professionalId: Long,
     val date: LocalDate,
@@ -265,7 +275,11 @@ data class Subscription(
     val expirationDate: String?
 )
 
-data class SubscriptionPlan(val id: Int, val name: String, val pricePen: Double, val features: List<String>)
+/**
+ * The backend does not expose prices: the displayed price lives only in res/values/strings.xml (plan_price_*),
+ * with the same values as the web (public/es.json, subscriptions.plans.*.price). See UiMappings.planPrice.
+ */
+data class SubscriptionPlan(val id: Int, val name: String, val features: List<String>)
 
 data class PaymentData(
     val planId: Int,

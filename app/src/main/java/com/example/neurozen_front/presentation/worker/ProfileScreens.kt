@@ -90,6 +90,10 @@ import com.example.neurozen_front.presentation.components.MessageChannel
 import com.example.neurozen_front.presentation.components.NzTextField
 import com.example.neurozen_front.presentation.components.NzTopBar
 import com.example.neurozen_front.presentation.components.PasswordField
+import com.example.neurozen_front.presentation.components.PasswordRequirements
+import com.example.neurozen_front.presentation.components.UiMappings
+import androidx.compose.ui.res.stringResource
+import com.example.neurozen_front.R
 import com.example.neurozen_front.presentation.components.PrimaryButton
 import com.example.neurozen_front.presentation.components.SectionCard
 import com.example.neurozen_front.presentation.components.StateContent
@@ -437,6 +441,7 @@ fun ChangePasswordScreen(onBack: () -> Unit, vm: ChangePasswordViewModel = hiltV
             } else {
                 PasswordField(f.current, { v -> vm.update { it.copy(current = v) } }, "Contraseña actual")
                 PasswordField(f.new, { v -> vm.update { it.copy(new = v) } }, "Nueva contraseña")
+                PasswordRequirements(f.new)
                 PasswordField(f.confirm, { v -> vm.update { it.copy(confirm = v) } }, "Confirmar nueva contraseña")
                 f.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 PrimaryButton("Guardar", vm::save, loading = f.loading)
@@ -522,7 +527,7 @@ fun SubscriptionScreen(onBack: () -> Unit, vm: SubscriptionViewModel = hiltViewM
                 ) {
                     Row {
                         Text(plan.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                        Text(if (plan.pricePen == 0.0) "Gratis" else "S/ ${"%.2f".format(plan.pricePen)}/mes")
+                        Text(stringResource(UiMappings.planPrice(plan.id)), fontWeight = FontWeight.SemiBold)
                     }
                     plan.features.forEach { feature ->
                         Row(verticalAlignment = Alignment.CenterVertically) {

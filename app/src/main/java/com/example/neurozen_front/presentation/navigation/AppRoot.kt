@@ -20,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.neurozen_front.data.session.SessionRepositoryImpl
+import com.example.neurozen_front.domain.logic.ResetLinkResult
 import com.example.neurozen_front.domain.model.Role
 import com.example.neurozen_front.domain.usecase.LogoutUseCase
 import com.example.neurozen_front.presentation.auth.AuthNavHost
@@ -58,16 +59,20 @@ class AppViewModel @Inject constructor(
 
 /** Splash -> reset link -> auth -> navigation by role. ADMIN is web-only. */
 @Composable
-fun AppRoot(resetToken: String?, onResetTokenConsumed: () -> Unit, viewModel: AppViewModel = hiltViewModel()) {
+fun AppRoot(resetLink: ResetLinkResult?, onResetLinkConsumed: () -> Unit, viewModel: AppViewModel = hiltViewModel()) {
     val loaded by viewModel.isLoaded.collectAsState()
     val session by viewModel.session.collectAsState()
     val notice by viewModel.notice.collectAsState()
 
     when {
         !loaded -> Splash()
-        resetToken != null -> ResetPasswordScreen(initialToken = resetToken, onDone = onResetTokenConsumed)
-        session == null -> AuthNavHost(notice = notice, onNoticeShown = viewModel::clearNotice)
-        else -> when (session!!.role) {
+        resetLink != null -> ResetPasswordScreen(
+            initialToken = (resetLink as? ResetLinkResult.Valid)?.token.orEmpty(),
+            invalidLink = resetLink is ResetLinkResult.InvalidToken,
+            onDone = onResetLinkConsumed
+        )
+        else -> when (session?.role) {
+            null -> AuthNavHost(notice = notice, onNoticeShown = viewModel::clearNotice)
             Role.USER -> WorkerNavHost(onLogout = viewModel::logout)
             Role.PSYCHOLOGIST -> PsychologistRoot(onLogout = viewModel::logout)
             Role.ADMIN, Role.UNKNOWN -> WebOnlyScreen(onLogout = viewModel::logout)

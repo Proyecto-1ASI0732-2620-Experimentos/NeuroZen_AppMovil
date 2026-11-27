@@ -1,6 +1,10 @@
 package com.example.neurozen_front.presentation.auth
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
+import com.example.neurozen_front.BuildConfig
+import com.example.neurozen_front.R
+import com.example.neurozen_front.domain.logic.ResetLink
 import androidx.lifecycle.viewModelScope
 import com.example.neurozen_front.domain.logic.Catalogs
 import com.example.neurozen_front.domain.logic.Validators
@@ -180,11 +184,15 @@ class RegisterViewModel @Inject constructor(private val auth: AuthRepository) : 
 
 data class PasswordUiState(
     val email: String = "",
+    /** Token, or the whole link pasted by the user (the token is extracted and validated before sending). */
     val token: String = "",
     val password: String = "",
     val confirm: String = "",
     val loading: Boolean = false,
+    /** Backend message or password rule text. */
     val error: String? = null,
+    /** Local message from strings.xml (link missing/invalid, passwords do not match). */
+    @param:StringRes val errorRes: Int? = null,
     val success: String? = null
 )
 
@@ -193,7 +201,7 @@ class PasswordViewModel @Inject constructor(private val auth: AuthRepository) : 
     private val _state = MutableStateFlow(PasswordUiState())
     val state: StateFlow<PasswordUiState> = _state.asStateFlow()
 
-    fun update(transform: (PasswordUiState) -> PasswordUiState) = _state.update { transform(it).copy(error = null) }
+    fun update(transform: (PasswordUiState) -> PasswordUiState) = _state.update { transform(it).copy(error = null, errorRes = null) }
 
     fun requestLink() {
         val email = _state.value.email
@@ -212,19 +220,25 @@ class PasswordViewModel @Inject constructor(private val auth: AuthRepository) : 
 
     fun reset() {
         val s = _state.value
-        val error = when {
-            s.token.isBlank() -> "Falta el código del enlace"
-            Validators.passwordError(s.password) != null -> Validators.passwordError(s.password)
-            s.password != s.confirm -> "Las contraseñas no coinciden"
+        if (s.loading) return
+        val token = ResetLink.tokenFromUserInput(s.token, BuildConfig.RESET_LINK_HOST)
+        val errorRes = when {
+            s.token.isBlank() -> R.string.reset_link_missing
+            token == null -> R.string.reset_link_invalid
+            Validators.passwordError(s.password) == null && s.password != s.confirm -> R.string.reset_mismatch
             else -> null
         }
-        if (error != null) { _state.update { it.copy(error = error) }; return }
+        val passwordError = if (errorRes == null) Validators.passwordError(s.password) else null
+        if (errorRes != null || passwordError != null || token == null) {
+            _state.update { it.copy(errorRes = errorRes, error = passwordError) }
+            return
+        }
         _state.update { it.copy(loading = true) }
         viewModelScope.launch {
-            val result = auth.resetPassword(s.token, s.password)
+            val result = auth.resetPassword(token, s.password)
             _state.update {
                 when (result) {
-                    is Outcome.Success -> it.copy(loading = false, success = result.data, password = "", confirm = "")
+                    is Outcome.Success -> it.copy(loading = false, success = result.data, password = "", confirm = "", token = "")
                     is Outcome.Failure -> it.copy(loading = false, error = result.error.message)
                 }
             }

@@ -1,5 +1,23 @@
 package com.example.neurozen_front.presentation.worker
 
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import com.example.neurozen_front.R
+import com.example.neurozen_front.domain.logic.BookingDay
+import com.example.neurozen_front.domain.logic.CalendarSource
+import com.example.neurozen_front.domain.logic.ProfessionalFormat
+import com.example.neurozen_front.domain.logic.RatingDisplay
+import com.example.neurozen_front.presentation.components.EmptyView
+import com.example.neurozen_front.presentation.components.ErrorBanner
+import com.example.neurozen_front.presentation.components.InfoBanner
+import androidx.compose.material3.TextButton
 import com.example.neurozen_front.domain.logic.Catalogs
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -66,16 +84,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImage
 import com.example.neurozen_front.domain.logic.DateTimeUtils
-import com.example.neurozen_front.domain.model.AppError
-import com.example.neurozen_front.domain.model.AppointmentType
-import com.example.neurozen_front.domain.model.BookingRequest
 import com.example.neurozen_front.domain.model.Outcome
 import com.example.neurozen_front.domain.model.Professional
 import com.example.neurozen_front.domain.model.Review
 import com.example.neurozen_front.domain.model.getOrNull
-import com.example.neurozen_front.domain.repository.AppointmentRepository
 import com.example.neurozen_front.domain.repository.ProfessionalRepository
-import com.example.neurozen_front.domain.usecase.BookAppointmentUseCase
 import com.example.neurozen_front.presentation.components.MessageChannel
 import com.example.neurozen_front.presentation.components.NzTextField
 import com.example.neurozen_front.presentation.components.NzTopBar
@@ -84,14 +97,13 @@ import com.example.neurozen_front.presentation.components.SectionCard
 import com.example.neurozen_front.presentation.components.StateContent
 import com.example.neurozen_front.presentation.components.UiState
 import com.example.neurozen_front.presentation.components.toUiState
+import com.example.neurozen_front.presentation.theme.LocalNzDarkTheme
 import com.example.neurozen_front.presentation.theme.NzColors
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 import javax.inject.Inject
 
 // ---------- Directory (only verified professionals come from the backend) ----------
@@ -146,11 +158,7 @@ private fun ProfessionalCard(p: Professional, onClick: () -> Unit) {
                         Icon(Icons.Filled.Verified, contentDescription = "Verificado por CPsP", tint = NzColors.Turquoise, modifier = Modifier.padding(start = 4.dp).size(18.dp))
                     }
                     Text(Catalogs.specialtyLabel(p.specialty), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Star, contentDescription = null, tint = NzColors.Moderate, modifier = Modifier.size(16.dp))
-                        Text(" ${"%.1f".format(p.rating)}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                        Text("  (${p.reviews} reseñas)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    RatingSummary(p.rating, p.reviews)
                 }
             }
             if (p.bio.isNotBlank()) Text(p.bio, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
@@ -158,7 +166,12 @@ private fun ProfessionalCard(p: Professional, onClick: () -> Unit) {
                 p.experienceYears?.let { Tag("$it años exp.") }
                 Tag("CPsP verificado")
                 Box(Modifier.weight(1f))
-                p.price?.let { Text("S/ ${"%.0f".format(it)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }
+                val amount = ProfessionalFormat.priceAmount(p.price)
+                Text(
+                    amount?.let { stringResource(R.string.price_value, it) } ?: stringResource(R.string.price_to_be_defined),
+                    style = if (amount != null) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
@@ -195,10 +208,15 @@ fun ProfessionalDetailScreen(onBack: () -> Unit, onBook: () -> Unit, vm: Profess
                     Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         val price = (state as UiState.Success<ProfessionalDetail>).data.professional.price
                         Column(Modifier.weight(1f)) {
-                            Text("Tarifa por sesión", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(price?.let { "S/ ${"%.2f".format(it)}" } ?: "Consultar", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(stringResource(R.string.price_per_session), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            val amount = ProfessionalFormat.priceAmount(price)
+                            Text(
+                                amount?.let { stringResource(R.string.price_value, it) } ?: stringResource(R.string.price_to_be_defined),
+                                style = if (amount != null) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary
+                            )
                         }
-                        PrimaryButton("Reservar sesión", onBook, Modifier.weight(1.3f))
+                        PrimaryButton(stringResource(R.string.booking_book_appointment), onBook, Modifier.weight(1.3f))
                     }
                 }
             }
@@ -219,8 +237,14 @@ fun ProfessionalDetailScreen(onBack: () -> Unit, onBook: () -> Unit, vm: Profess
                                 }
                                 Spacer(Modifier.height(14.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    HeaderStat("★ ${"%.1f".format(p.rating)}", "Valoración", Modifier.weight(1f))
-                                    HeaderStat(p.reviews.toString(), "Reseñas", Modifier.weight(1f))
+                                    val rating = ProfessionalFormat.rating(p.rating, p.reviews)
+                                    val ratingA11y = ratingDescription(rating)
+                                    HeaderStat(
+                                        if (rating is RatingDisplay.Rated) stringResource(R.string.rating_short, rating.text) else stringResource(R.string.stress_index_unknown),
+                                        stringResource(R.string.rating_stat_label),
+                                        Modifier.weight(1f).clearAndSetSemantics { contentDescription = ratingA11y }
+                                    )
+                                    HeaderStat(p.reviews.toString(), stringResource(R.string.reviews_stat_label), Modifier.weight(1f))
                                     HeaderStat(p.experienceYears?.let { "$it años" } ?: "—", "Experiencia", Modifier.weight(1f))
                                 }
                             }
@@ -255,7 +279,12 @@ fun ProfessionalDetailScreen(onBack: () -> Unit, onBook: () -> Unit, vm: Profess
                                     Text(r.userName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                                     r.createdAt?.let { Text(DateTimeUtils.formatDateTime(it), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                                 }
-                                Text("★".repeat(r.rating.coerceIn(0, 5)) + "☆".repeat(5 - r.rating.coerceIn(0, 5)), color = NzColors.Moderate)
+                                val stars = r.rating.coerceIn(0, 5)
+                                val starsA11y = stringResource(R.string.review_rating_a11y, stars)
+                                Text(
+                                    "★".repeat(stars) + "☆".repeat(5 - stars), color = if (LocalNzDarkTheme.current) NzColors.Moderate else NzColors.StarText,
+                                    modifier = Modifier.clearAndSetSemantics { contentDescription = starsA11y }
+                                )
                             }
                             if (r.comment.isNotBlank()) Text(r.comment, style = MaterialTheme.typography.bodyMedium)
                         }
@@ -266,65 +295,43 @@ fun ProfessionalDetailScreen(onBack: () -> Unit, onBook: () -> Unit, vm: Profess
     }
 }
 
-// ---------- 4-step booking wizard with real slots ----------
+// ---------- 4-step booking wizard with real availability (BookingViewModel.kt) ----------
 
-data class BookingUi(
-    val step: Int = 1,
-    val types: UiState<List<AppointmentType>> = UiState.Loading,
-    val type: AppointmentType? = null,
-    val date: LocalDate? = null,
-    val slots: UiState<List<String>> = UiState.Empty,
-    val slot: String? = null,
-    val notes: String = "",
-    val submitting: Boolean = false,
-    val booked: Boolean = false
-)
-
-@HiltViewModel
-class BookingViewModel @Inject constructor(
-    savedState: SavedStateHandle,
-    private val professionals: ProfessionalRepository,
-    private val appointments: AppointmentRepository,
-    private val book: BookAppointmentUseCase
-) : ViewModel() {
-    val professionalId: Long = savedState["id"] ?: 0L
-    private val _ui = MutableStateFlow(BookingUi())
-    val ui = _ui.asStateFlow()
-    val messages = MessageChannel()
-
-    init { loadTypes() }
-
-    fun loadTypes() = viewModelScope.launch { _ui.update { it.copy(types = appointments.getTypes().toUiState()) } }
-
-    fun selectType(type: AppointmentType) = _ui.update { it.copy(type = type, step = 2) }
-
-    fun selectDate(date: LocalDate) {
-        _ui.update { it.copy(date = date, slot = null, slots = UiState.Loading, step = 3) }
-        loadSlots()
+@Composable
+fun BookingScreen(onBack: () -> Unit, onBooked: () -> Unit, vm: BookingViewModel = hiltViewModel()) {
+    val ui by vm.ui.collectAsState()
+    val snackbar = remember { SnackbarHostState() }
+    val successMessage = stringResource(R.string.booking_success)
+    LaunchedEffect(Unit) { vm.messages.messages.collect { snackbar.showSnackbar(it) } }
+    LaunchedEffect(ui.booked) {
+        if (ui.booked) { snackbar.showSnackbar(successMessage); onBooked() }
     }
-
-    fun loadSlots() = viewModelScope.launch {
-        val date = _ui.value.date ?: return@launch
-        _ui.update { it.copy(slots = professionals.getAvailableSlots(professionalId, date).toUiState()) }
+    Scaffold(
+        topBar = { NzTopBar(stringResource(R.string.booking_title, ui.step), onBack = { if (ui.step > 1) vm.back() else onBack() }) },
+        snackbarHost = { SnackbarHost(snackbar) }
+    ) { padding ->
+        Column(Modifier.padding(padding).fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            LinearProgressIndicator(progress = { ui.step / 4f }, modifier = Modifier.fillMaxWidth())
+            when (ui.step) {
+                1 -> BookingTypeStep(ui, vm)
+                2 -> BookingDayStep(ui, vm)
+                3 -> BookingTimeStep(ui, vm)
+                else -> BookingSummaryStep(ui, vm)
+            }
+        }
     }
+}
 
-    fun selectSlot(slot: String) = _ui.update { it.copy(slot = slot, step = 4) }
-    fun back() = _ui.update { it.copy(step = (it.step - 1).coerceAtLeast(1)) }
-    fun updateNotes(v: String) = _ui.update { it.copy(notes = v.take(500)) }
-
-    fun confirm() {
-        val s = _ui.value
-        val type = s.type ?: return
-        val date = s.date ?: return
-        val slot = s.slot ?: return
-        _ui.update { it.copy(submitting = true) }
-        viewModelScope.launch {
-            when (val r = book(BookingRequest(professionalId, date, slot, type.value, s.notes))) {
-                is Outcome.Success -> _ui.update { it.copy(submitting = false, booked = true) }
-                is Outcome.Failure -> {
-                    messages.send(r.error.message)
-                    if (r.error is AppError.Conflict) { _ui.update { it.copy(submitting = false, step = 3, slot = null) }; loadSlots() }
-                    else _ui.update { it.copy(submitting = false) }
+@Composable
+private fun BookingTypeStep(ui: BookingUi, vm: BookingViewModel) {
+    Text(stringResource(R.string.booking_type_question), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+    StateContent(ui.types, onRetry = { vm.loadTypes() }) { types ->
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(types, key = { it.value }) { t ->
+                SectionCard(Modifier.clickable(role = Role.Button) { vm.selectType(t) }) {
+                    Text(t.displayName, style = MaterialTheme.typography.titleMedium)
+                    if (t.description.isNotBlank()) Text(t.description)
+                    Text(stringResource(R.string.booking_type_duration, t.durationMinutes), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -332,68 +339,142 @@ class BookingViewModel @Inject constructor(
 }
 
 @Composable
-fun BookingScreen(onBack: () -> Unit, onBooked: () -> Unit, vm: BookingViewModel = hiltViewModel()) {
-    val ui by vm.ui.collectAsState()
-    val snackbar = remember { SnackbarHostState() }
-    LaunchedEffect(Unit) { vm.messages.messages.collect { snackbar.showSnackbar(it) } }
-    LaunchedEffect(ui.booked) {
-        if (ui.booked) { snackbar.showSnackbar("¡Cita reservada! Queda pendiente de confirmación."); onBooked() }
-    }
-    Scaffold(
-        topBar = { NzTopBar("Reservar sesión · Paso ${ui.step} de 4", onBack = { if (ui.step > 1) vm.back() else onBack() }) },
-        snackbarHost = { SnackbarHost(snackbar) }
-    ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            LinearProgressIndicator(progress = { ui.step / 4f }, modifier = Modifier.fillMaxWidth())
-            when (ui.step) {
-                1 -> {
-                    Text("¿Qué tipo de sesión necesitas?", style = MaterialTheme.typography.titleMedium)
-                    StateContent(ui.types, onRetry = { vm.loadTypes() }) { types ->
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            items(types, key = { it.value }) { t ->
-                                SectionCard(Modifier.clickable { vm.selectType(t) }) {
-                                    Text(t.displayName, style = MaterialTheme.typography.titleMedium)
-                                    if (t.description.isNotBlank()) Text(t.description)
-                                    Text("Duración aprox.: ${t.durationMinutes} min", style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-                        }
-                    }
-                }
-                2 -> {
-                    Text("Elige un día", style = MaterialTheme.typography.titleMedium)
-                    val today = DateTimeUtils.todayInLima()
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items((1..21).map { today.plusDays(it.toLong()) }) { d ->
-                            OutlinedButton(onClick = { vm.selectDate(d) }, modifier = Modifier.fillMaxWidth()) { Text(DateTimeUtils.formatDate(d)) }
-                        }
-                    }
-                }
-                3 -> {
-                    Text("Horarios libres · ${ui.date?.let(DateTimeUtils::formatDate)} (hora de Lima)", style = MaterialTheme.typography.titleMedium)
-                    StateContent(ui.slots, onRetry = { vm.loadSlots() }, emptyMessage = "No hay horarios libres ese día. Prueba otra fecha.",
-                        emptyAction = "Elegir otro día" to { vm.back() }) { slots ->
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(slots.chunked(3)) { row ->
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    row.forEach { s -> OutlinedButton(onClick = { vm.selectSlot(s) }, modifier = Modifier.weight(1f)) { Text(s) } }
-                                    repeat(3 - row.size) { Box(Modifier.weight(1f)) }
-                                }
-                            }
-                        }
-                    }
-                }
-                else -> Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Confirma tu reserva", style = MaterialTheme.typography.titleMedium)
+private fun BookingDayStep(ui: BookingUi, vm: BookingViewModel) {
+    Text(stringResource(R.string.booking_choose_day), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+    TimeZoneNote()
+    StateContent(ui.calendar, onRetry = { vm.loadCalendar() }) { calendar ->
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            calendar.nextAvailable?.let { next ->
+                item {
                     SectionCard {
-                        Text("Tipo: ${ui.type?.displayName}")
-                        Text("Fecha: ${ui.date?.let(DateTimeUtils::formatDate)}")
-                        Text("Hora: ${ui.slot} (Lima)")
+                        Text(stringResource(R.string.booking_next_available, DateTimeUtils.formatDate(next)), style = MaterialTheme.typography.titleSmall)
+                        OutlinedButton(onClick = { vm.selectDate(next) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                            Text(stringResource(R.string.booking_choose_next))
+                        }
                     }
-                    NzTextField(ui.notes, vm::updateNotes, "¿Algo que quieras contarle al psicólogo? (opcional)", singleLine = false, minLines = 3)
-                    PrimaryButton("Confirmar reserva", vm::confirm, loading = ui.submitting)
-                    Text("La cita quedará Pendiente hasta que el psicólogo la confirme.", style = MaterialTheme.typography.bodySmall)
                 }
+            }
+            when (calendar.source) {
+                CalendarSource.SCHEDULE -> item { InfoBanner(stringResource(R.string.booking_calendar_schedule_note)) }
+                CalendarSource.UNVERIFIED -> item { InfoBanner(stringResource(R.string.booking_calendar_unverified_note)) }
+                CalendarSource.BACKEND -> Unit
+            }
+            if (!calendar.hasEnabledDays && calendar.nextAvailable == null) {
+                item { EmptyView(stringResource(R.string.booking_no_days)) }
+            } else {
+                items(calendar.days.chunked(DAYS_PER_ROW)) { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        row.forEach { day -> DayCell(day, ui.date == day.date, Modifier.weight(1f)) { vm.selectDate(day.date) } }
+                        repeat(DAYS_PER_ROW - row.size) { Box(Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private const val DAYS_PER_ROW = 4
+
+/** Day of the calendar: disabled (and announced as such) when it has no free hours. */
+@Composable
+private fun DayCell(day: BookingDay, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val name = DateTimeUtils.formatDate(day.date)
+    val description = stringResource(if (day.enabled) R.string.booking_day_available_a11y else R.string.booking_day_unavailable_a11y, name)
+    val colors = if (selected) androidx.compose.material3.ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    else androidx.compose.material3.ButtonDefaults.outlinedButtonColors()
+    OutlinedButton(
+        onClick = onClick, enabled = day.enabled, colors = colors,
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+        modifier = modifier.heightIn(min = 64.dp).semantics { contentDescription = description }
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(DateTimeUtils.dayShort(day.date.dayOfWeek), style = MaterialTheme.typography.labelMedium)
+            Text(day.date.dayOfMonth.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(DateTimeUtils.monthShort(day.date), style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@Composable
+private fun TimeZoneNote() {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Icon(Icons.Outlined.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+        Text(stringResource(R.string.booking_timezone), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun BookingTimeStep(ui: BookingUi, vm: BookingViewModel) {
+    Text(
+        stringResource(R.string.booking_slots_title, ui.date?.let(DateTimeUtils::formatDate).orEmpty()),
+        style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() }
+    )
+    TimeZoneNote()
+    ui.notice?.let { ErrorBanner(stringResource(it)) }
+    StateContent(
+        ui.slots, onRetry = { vm.loadSlots() }, emptyMessage = stringResource(R.string.booking_no_slots),
+        emptyAction = stringResource(R.string.booking_choose_other_day) to { vm.changeDate() }
+    ) { slots ->
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(slots.chunked(3)) { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { s -> OutlinedButton(onClick = { vm.selectSlot(s) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) { Text(s) } }
+                    repeat(3 - row.size) { Box(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookingSummaryStep(ui: BookingUi, vm: BookingViewModel) {
+    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(stringResource(R.string.booking_confirm_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        SectionCard {
+            SummaryRow(stringResource(R.string.booking_summary_type, ui.type?.displayName.orEmpty()), R.string.booking_change_type_a11y, vm::changeType)
+            SummaryRow(stringResource(R.string.booking_summary_date, ui.date?.let(DateTimeUtils::formatDate).orEmpty()), R.string.booking_change_date_a11y, vm::changeDate)
+            SummaryRow(stringResource(R.string.booking_summary_time, ui.slot.orEmpty()), R.string.booking_change_time_a11y, vm::changeTime)
+        }
+        NzTextField(ui.notes, vm::updateNotes, stringResource(R.string.booking_notes), singleLine = false, minLines = 3)
+        PrimaryButton(stringResource(R.string.booking_confirm), vm::confirm, loading = ui.submitting)
+        Text(stringResource(R.string.booking_pending_note), style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun SummaryRow(text: String, @StringRes changeDescription: Int, onChange: () -> Unit) {
+    val a11y = stringResource(changeDescription)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(text, modifier = Modifier.weight(1f))
+        TextButton(onClick = onChange, modifier = Modifier.semantics { contentDescription = a11y }) { Text(stringResource(R.string.booking_change)) }
+    }
+}
+
+// ---------- Rating and price without filler values (B1, M1) ----------
+
+@Composable
+private fun ratingDescription(rating: RatingDisplay): String = when (rating) {
+    RatingDisplay.None -> stringResource(R.string.rating_none)
+    is RatingDisplay.Rated -> stringResource(
+        R.string.rating_a11y, rating.text, pluralStringResource(R.plurals.reviews_count, rating.reviews, rating.reviews)
+    )
+}
+
+/** «★ 4,5 (12 reseñas)» read as one sentence; «Sin valoraciones aún» when there are no reviews. */
+@Composable
+private fun RatingSummary(rating: Double, reviews: Int) {
+    val display = ProfessionalFormat.rating(rating, reviews)
+    val description = ratingDescription(display)
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clearAndSetSemantics { contentDescription = description }) {
+        when (display) {
+            RatingDisplay.None -> Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            is RatingDisplay.Rated -> {
+                Icon(Icons.Filled.Star, contentDescription = null, tint = NzColors.Moderate, modifier = Modifier.size(16.dp))
+                Text(" ${display.text}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    "  (" + pluralStringResource(R.plurals.reviews_count, display.reviews, display.reviews) + ")",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

@@ -1,5 +1,8 @@
 package com.example.neurozen_front.presentation.psychologist
 
+import com.example.neurozen_front.domain.logic.StressScale
+import com.example.neurozen_front.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import com.example.neurozen_front.domain.logic.AvailabilityDraft
 import com.example.neurozen_front.domain.model.isProfessionalNotVerified
@@ -335,7 +338,7 @@ fun PatientsScreen(profile: ProfessionalProfile, onOpen: (Long) -> Unit, vm: Pro
     val state by vm.state.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
     Column(Modifier.fillMaxSize()) {
-        GradientHeader("Pacientes", "Personas que reservaron sesiones contigo")
+        GradientHeader("Pacientes", "Personas que reservaron citas contigo")
         StateContent(state, onRetry = { vm.load() }, emptyMessage = "Aún no tienes pacientes.") { list ->
             val patients = list.groupBy { it.patientId }.map { (id, appts) ->
                 PatientSummary(id, appts.firstNotNullOfOrNull { it.patientName } ?: "Paciente #$id", appts.firstNotNullOfOrNull { it.patientEmail },
@@ -474,15 +477,21 @@ fun ReportCard(r: Report) {
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ReportMetric("Actual", "%.0f/10".format(r.stats.current), Modifier.weight(1f))
-            ReportMetric("Promedio", "%.1f".format(r.stats.average), Modifier.weight(1f))
+            val unknown = stringResource(R.string.stress_index_unknown)
+            ReportMetric("Actual", StressScale.fromTriggerAverage(r.stats.current)?.let { stringResource(R.string.stress_index_value, it) } ?: unknown, Modifier.weight(1f))
+            ReportMetric("Promedio", StressScale.fromTriggerAverage(r.stats.average)?.let { stringResource(R.string.stress_index_value, it) } ?: unknown, Modifier.weight(1f))
             ReportMetric("Semana", "%+.1f".format(r.stats.weeklyChange), Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ReportMetric("Hora pico", r.stats.peakHours.substringBefore(" "), Modifier.weight(1f))
             ReportMetric("Registros", r.stats.triggersCount.toString(), Modifier.weight(1f))
-            ReportMetric("Último test", r.stats.lastAssessment?.let { "${it.score}/40" } ?: "—", Modifier.weight(1f))
+            ReportMetric("Último test", r.stats.lastAssessment?.let { StressScale.fromPss(it.score) }?.let { stringResource(R.string.stress_index_value, it) } ?: "—", Modifier.weight(1f))
         }
+        Text(
+            stringResource(R.string.report_raw_values, "%.0f".format(r.stats.current), "%.1f".format(r.stats.average),
+                r.stats.lastAssessment?.let { stringResource(R.string.stress_detail_pss, it.score) } ?: stringResource(R.string.report_no_test)),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Text("Principal fuente de estrés: ${Catalogs.categoryLabel(r.stats.topCategory)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         r.note?.takeIf { it.isNotBlank() }?.let {
             Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp)) {
